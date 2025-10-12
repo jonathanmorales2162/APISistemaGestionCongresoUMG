@@ -1,19 +1,20 @@
-import mysql from 'mysql2/promise';
+import pkg from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Crear pool de conexiones
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  port: Number(process.env.DB_PORT) || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : undefined
+const { Pool } = pkg;
+
+// Puedes usar una variable URI completa o los parámetros individuales
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: true
+  }
 });
+
+pool.connect()
+  .then(() => console.log(' Conectado a PostgreSQL en Neon'))
+  .catch(err => console.error(' Error conectando a PostgreSQL:', err));
 
 export default pool;
