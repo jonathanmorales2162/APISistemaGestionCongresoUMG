@@ -33,7 +33,7 @@
     "@types/pg": "^8.15.5",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
-    "@vercel/node": "^3.0.0",
+    "@vercel/node": "^3.2.29",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

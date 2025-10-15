@@ -3,3 +3,28 @@ dist
 .env
 secrets/
 .vscode
+
+# Archivos compilados de TypeScript
+*.js
+*.js.map
+*.d.ts
+
+# Excepciones para archivos JS que SÍ queremos versionar (si los hay)
+!vercel.json
+!package.json
+!package-lock.json
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos temporales
+.tmp
+.temp
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
