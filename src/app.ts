@@ -3,7 +3,13 @@ import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
 import hpp from 'hpp';
 import cookieParser from 'cookie-parser';
+import  { ZodError } from 'zod';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
+import { swaggerOptions } from './config/swagger.js'; 
 import rolesRouter from './routes/roles.routes.js';
+import usuariosRouter from './routes/usuarios.routes.js';
+import { databaseErrorHandler, generalErrorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
@@ -39,16 +45,74 @@ app.use(rateLimit({
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
+// Swagger UI
+const specs = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'API Sistema Gestión Congreso UMG',
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    filter: true,
+    showExtensions: true,
+    showCommonExtensions: true
+  }
+}));
+
+// Ruta raíz - Redirección a Swagger
+app.get('/', (_req, res) => {
+  res.redirect('/api-docs');
+});
+
 // Healthcheck
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-// Endpoint de prueba
+// Rutas
 app.use('/roles', rolesRouter);
+app.use('/usuarios', usuariosRouter);
 
 // Manejador de errores
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("Error en middleware:", err);
-  res.status(500).json({ error: 'Error interno del servidor' });
+  
+  // Error de validación Zod
+  if (err instanceof ZodError) {
+    return res.status(400).json({
+      success: false,
+      message: 'Error de validación',
+      errors: err.issues.map(error => ({
+        field: error.path.join('.'),
+        message: error.message
+      }))
+    });
+  }
+
+  // Error de PostgreSQL
+  if (err && typeof err === 'object' && 'code' in err) {
+    const pgError = err as any;
+    
+    // Violación de restricción única
+    if (pgError.code === '23505') {
+      return res.status(400).json({
+        success: false,
+        message: 'El registro ya existe'
+      });
+    }
+    
+    // Violación de clave foránea
+    if (pgError.code === '23503') {
+      return res.status(400).json({
+        success: false,
+        message: 'Referencia inválida'
+      });
+    }
+  }
+
+  // Error genérico
+  res.status(500).json({ 
+    success: false,
+    message: "Error interno del servidor" 
+  });
 });
 
 export default app;
