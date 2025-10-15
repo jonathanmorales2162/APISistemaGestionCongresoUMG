@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import  { ZodError } from 'zod';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
-import { swaggerOptions } from './config/swagger.js'; 
+import { swaggerOptions } from './config/swagger.js';
 import rolesRouter from './routes/roles.routes.js';
 import usuariosRouter from './routes/usuarios.routes.js';
 import { databaseErrorHandler, generalErrorHandler } from './middleware/errorHandler.js';
