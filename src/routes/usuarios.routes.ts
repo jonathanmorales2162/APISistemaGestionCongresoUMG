@@ -16,6 +16,8 @@ import type {
   UsuarioSinPassword, 
   ApiResponse 
 } from '../types/usuarios.types.js';
+import { authenticateToken } from '../middleware/auth.middleware.js';
+
 
 const router = Router();
 
@@ -244,6 +246,55 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
+
+// GET /usuarios/perfil - Obtener perfil del usuario autenticado
+router.get('/perfil', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Usuario no autenticado'
+      });
+    }
+
+    const query = `
+      SELECT 
+        u.id_usuario,
+        u.nombre,
+        u.apellido,
+        u.correo,
+        u.telefono,
+        u.colegio,
+        u.tipo,
+        u.id_rol,
+        u.creado_en,
+        r.nombre as rol_nombre
+      FROM usuarios u
+      LEFT JOIN roles r ON u.id_rol = r.id_rol
+      WHERE u.id_usuario = $1
+    `;
+
+    const result = await pool.query(query, [req.user.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    const usuario = result.rows[0];
+    const { password, ...usuarioSinPassword } = usuario;
+
+    return res.json({
+      success: true,
+      perfil: usuarioSinPassword
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /usuarios/:id - Obtener un usuario por ID
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -564,6 +615,454 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     next(err);
   }
 });
+
+/**
+ * @swagger
+ * /usuarios/perfil:
+ *   put:
+ *     summary: Actualizar perfil del usuario autenticado
+ *     description: Actualiza la información del perfil del usuario autenticado
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *                 description: Nombre del usuario
+ *                 example: "Jonathan"
+ *               apellido:
+ *                 type: string
+ *                 description: Apellido del usuario
+ *                 example: "Morales"
+ *               telefono:
+ *                 type: string
+ *                 description: Número de teléfono del usuario
+ *                 example: "12345678"
+ *               colegio:
+ *                 type: string
+ *                 description: Institución educativa del usuario
+ *                 example: "Universidad Mariano Gálvez"
+ *               tipo:
+ *                 type: string
+ *                 enum: ["I", "E"]
+ *                 description: Tipo de usuario (I=Interno, E=Externo)
+ *                 example: "I"
+ *               id_rol:
+ *                 type: integer
+ *                 description: ID del rol del usuario
+ *                 example: 2
+ *     responses:
+ *       200:
+ *         description: Perfil actualizado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Perfil actualizado exitosamente"
+ *                 usuario:
+ *                   type: object
+ *                   properties:
+ *                     id_usuario:
+ *                       type: string
+ *                       example: "1"
+ *                     nombre:
+ *                       type: string
+ *                       example: "Jonathan"
+ *                     apellido:
+ *                       type: string
+ *                       example: "Morales"
+ *                     correo:
+ *                       type: string
+ *                       format: email
+ *                       example: "jonathanm@gmail.com"
+ *                     telefono:
+ *                       type: string
+ *                       example: "12345678"
+ *                     colegio:
+ *                       type: string
+ *                       example: "Universidad Mariano Gálvez"
+ *                     tipo:
+ *                       type: string
+ *                       example: "I"
+ *                     id_rol:
+ *                       type: string
+ *                       example: "2"
+ *                     creado_en:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2024-01-15T10:30:00Z"
+ *       400:
+ *         description: Error de validación o datos inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Datos de entrada inválidos"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: "telefono"
+ *                       message:
+ *                         type: string
+ *                         example: "El teléfono debe tener al menos 8 dígitos"
+ *       401:
+ *         description: Token de acceso requerido o usuario no autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Usuario no autenticado"
+ *       403:
+ *         description: Token inválido o expirado
+ *       500:
+ *         description: Error interno del servidor
+ */
+
+// PUT /usuarios/perfil - Actualizar perfil del usuario autenticado
+router.put('/perfil', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Usuario no autenticado'
+      });
+    }
+
+    const updateData = actualizarUsuarioSchema.parse(req.body);
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se proporcionaron campos para actualizar'
+      });
+    }
+
+
+    // Verificar si el rol existe (si se está actualizando)
+    if (updateData.id_rol) {
+      const roleCheck = await pool.query(
+        'SELECT id_rol FROM roles WHERE id_rol = $1',
+        [updateData.id_rol]
+      );
+
+      if (roleCheck.rows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'El rol especificado no existe'
+        });
+      }
+    }
+
+    // Construir la consulta de actualización dinámicamente
+    const fields = Object.keys(updateData);
+    const values = Object.values(updateData);
+    const setClause = fields.map((field, index) => `${field} = $${index + 1}`).join(', ');
+
+    const query = `
+      UPDATE usuarios 
+      SET ${setClause}
+      WHERE id_usuario = $${fields.length + 1}
+      RETURNING id_usuario, nombre, apellido, correo, telefono, colegio, tipo, id_rol, creado_en
+    `;
+
+    const result = await pool.query(query, [...values, req.user.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Perfil actualizado exitosamente',
+      usuario: result.rows[0]
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Datos de entrada inválidos',
+        errors: err.issues.map(e => ({
+          field: e.path.join('.'),
+          message: e.message
+        }))
+      });
+    }
+    next(err);
+  }
+});
+
+/**
+ * @swagger
+ * /usuarios/password:
+ *   patch:
+ *     summary: Cambiar contraseña del usuario autenticado
+ *     description: Permite al usuario autenticado cambiar su contraseña actual por una nueva
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 description: Contraseña actual del usuario
+ *                 example: "password123"
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *                 pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]"
+ *                 description: Nueva contraseña (debe contener al menos 8 caracteres, 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial)
+ *                 example: "NewPassword123!"
+ *     responses:
+ *       200:
+ *         description: Contraseña actualizada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Contraseña actualizada exitosamente"
+ *       400:
+ *         description: Error de validación o contraseña incorrecta
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   examples:
+ *                     invalid_current:
+ *                       summary: Contraseña actual incorrecta
+ *                       value: "La contraseña actual es incorrecta"
+ *                     same_password:
+ *                       summary: Nueva contraseña igual a la actual
+ *                       value: "La nueva contraseña debe ser diferente a la actual"
+ *                     validation_error:
+ *                       summary: Error de validación
+ *                       value: "Datos de entrada inválidos"
+ *                 errors:
+ *                   type: array
+ *                   description: Detalles de errores de validación (solo cuando hay errores de validación)
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: "newPassword"
+ *                       message:
+ *                         type: string
+ *                         example: "La nueva contraseña debe contener al menos: 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial"
+ *       401:
+ *         description: Token de acceso requerido o usuario no autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Usuario no autenticado"
+ *       403:
+ *         description: Token inválido o expirado
+ *       404:
+ *         description: Usuario no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Usuario no encontrado"
+ *       500:
+ *         description: Error interno del servidor
+ */
+
+// PATCH /usuarios/password - Cambiar contraseña del usuario autenticado
+router.patch('/password', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Usuario no autenticado'
+      });
+    }
+
+    const passwordSchema = z.object({
+      currentPassword: z.string().min(1, 'La contraseña actual es requerida'),
+      newPassword: z.string()
+        .min(8, 'La nueva contraseña debe tener al menos 8 caracteres')
+        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
+          'La nueva contraseña debe contener al menos: 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial')
+    });
+
+    const { currentPassword, newPassword } = passwordSchema.parse(req.body);
+
+    // Obtener la contraseña actual del usuario
+    const userQuery = await pool.query(
+      'SELECT password_hash FROM usuarios WHERE id_usuario = $1',
+      [req.user.id]
+    );
+
+    if (userQuery.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    const user = userQuery.rows[0];
+
+    // Verificar la contraseña actual
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña actual es incorrecta'
+      });
+    }
+
+    // Verificar que la nueva contraseña sea diferente a la actual
+    const isSamePassword = await bcrypt.compare(newPassword, user.password_hash);
+    if (isSamePassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'La nueva contraseña debe ser diferente a la actual'
+      });
+    }
+
+    // Hashear la nueva contraseña
+    const saltRounds = 12;
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Actualizar la contraseña
+    await pool.query(
+      'UPDATE usuarios SET password_hash = $1 WHERE id_usuario = $2',
+      [hashedNewPassword, req.user.id]
+    );
+
+    return res.json({
+      success: true,
+      message: 'Contraseña actualizada exitosamente'
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Datos de entrada inválidos',
+        errors: err.issues.map(e => ({
+          field: e.path.join('.'),
+          message: e.message
+        }))
+      });
+    }
+    next(err);
+  }
+});
+
+/**
+ * @swagger
+ * /usuarios/perfil:
+ *   get:
+ *     summary: Obtener perfil del usuario autenticado
+ *     description: Obtiene la información del perfil del usuario autenticado
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Perfil del usuario obtenido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 perfil:
+ *                   type: object
+ *                   properties:
+ *                     id_usuario:
+ *                       type: string
+ *                       format: uuid
+ *                     nombre:
+ *                       type: string
+ *                     apellido:
+ *                       type: string
+ *                     correo:
+ *                       type: string
+ *                       format: email
+ *                     telefono:
+ *                       type: string
+ *                     colegio:
+ *                       type: string
+ *                     tipo:
+ *                       type: string
+ *                     id_rol:
+ *                       type: string
+ *                       format: uuid
+ *                     creado_en:
+ *                       type: string
+ *                       format: date-time
+ *       401:
+ *         description: Token de acceso requerido
+ *       403:
+ *         description: Token inválido o expirado
+ *       404:
+ *         description: Usuario no encontrado
+ */
+
 
 /**
  * @swagger
