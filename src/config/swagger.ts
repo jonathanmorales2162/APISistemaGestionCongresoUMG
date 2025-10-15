@@ -279,7 +279,12 @@ const swaggerDefinition = {
 
 export const swaggerOptions = {
   definition: swaggerDefinition,
-  apis: ['./src/routes/*.ts'], // Rutas donde están las anotaciones
+  apis: [
+    // En desarrollo usa archivos TypeScript, en producción usa archivos JavaScript compilados
+    process.env.NODE_ENV === 'production' 
+      ? './dist/src/routes/*.js'
+      : './src/routes/*.ts'
+  ],
 };
 
 export const swaggerSpec = swaggerJSDoc(swaggerOptions);

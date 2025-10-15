@@ -13,6 +13,11 @@ import { databaseErrorHandler, generalErrorHandler } from './middleware/errorHan
 
 const app = express();
 
+// Configurar trust proxy para Vercel
+if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV) {
+  app.set('trust proxy', 1);
+}
+
 // Seguridad base: reemplazo manual de Helmet
 app.disable('x-powered-by');
 app.use((_req, res, next) => {
@@ -54,7 +59,13 @@ app.use(cors({
 // Rate limit genérico
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100
+  max: 100,
+  // Deshabilitar validaciones problemáticas en Vercel
+  validate: {
+    xForwardedForHeader: false,
+    forwardedHeader: false,
+    trustProxy: false
+  }
 }));
 
 // Parsers
