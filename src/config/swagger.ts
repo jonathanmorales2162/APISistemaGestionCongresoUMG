@@ -15,6 +15,14 @@ const swaggerDefinition = {
     {
       url: 'http://localhost:4000',
       description: 'Servidor de desarrollo'
+    },
+    {
+      url: 'http://localhost:3000',
+      description: 'Servidor de desarrollo alternativo'
+    },
+    {
+      url: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://tu-proyecto.vercel.app',
+      description: 'Servidor de producción (Vercel)'
     }
   ],
   components: {

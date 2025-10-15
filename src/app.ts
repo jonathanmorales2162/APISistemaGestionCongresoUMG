@@ -27,12 +27,28 @@ app.use((_req, res, next) => {
 
 app.use(hpp());
 
-// CORS restringido al frontend
+// CORS configurado para desarrollo y producción
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  FRONTEND_URL
+].filter(Boolean);
 
 app.use(cors({
-  origin: FRONTEND_URL,
-  credentials: true
+  origin: (origin, callback) => {
+    // Permitir requests sin origin (como Postman, aplicaciones móviles, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('No permitido por CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
 // Rate limit genérico

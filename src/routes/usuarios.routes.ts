@@ -542,6 +542,48 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
  *                   type: string
  *                   description: Token JWT para autenticación
  *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 usuario:
+ *                   type: object
+ *                   description: Información del usuario autenticado
+ *                   properties:
+ *                     id_usuario:
+ *                       type: integer
+ *                       description: ID único del usuario
+ *                       example: 1
+ *                     nombre:
+ *                       type: string
+ *                       description: Nombre del usuario
+ *                       example: "Juan"
+ *                     apellido:
+ *                       type: string
+ *                       description: Apellido del usuario
+ *                       example: "Pérez"
+ *                     correo:
+ *                       type: string
+ *                       format: email
+ *                       description: Correo electrónico del usuario
+ *                       example: "juan.perez@email.com"
+ *                     telefono:
+ *                       type: string
+ *                       description: Número de teléfono del usuario
+ *                       example: "+502 1234-5678"
+ *                     colegio:
+ *                       type: string
+ *                       description: Institución educativa del usuario
+ *                       example: "Universidad Mariano Gálvez"
+ *                     tipo:
+ *                       type: string
+ *                       enum: ["I", "E"]
+ *                       description: Tipo de usuario (I=Interno, E=Externo)
+ *                       example: "I"
+ *                     id_rol:
+ *                       type: integer
+ *                       description: ID del rol asignado al usuario
+ *                       example: 2
+ *                     rol_nombre:
+ *                       type: string
+ *                       description: Nombre del rol asignado al usuario
+ *                       example: "Participante"
  *       400:
  *         description: Error de validación
  *         content:
@@ -590,7 +632,20 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
 
   try {
     const result = await pool.query(
-      'SELECT id_usuario, password_hash FROM usuarios WHERE correo = $1',
+      `SELECT 
+        u.id_usuario, 
+        u.password_hash, 
+        u.nombre, 
+        u.apellido, 
+        u.correo, 
+        u.telefono, 
+        u.colegio, 
+        u.tipo, 
+        u.id_rol,
+        r.nombre as rol_nombre
+      FROM usuarios u
+      LEFT JOIN roles r ON u.id_rol = r.id_rol
+      WHERE u.correo = $1`,
       [correo]
     );
 
@@ -610,7 +665,23 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       { expiresIn: '1h' }
     );
 
-    return res.json({ token });
+    // Preparar datos del usuario sin el password_hash
+    const usuario = {
+      id_usuario: user.id_usuario,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      correo: user.correo,
+      telefono: user.telefono,
+      colegio: user.colegio,
+      tipo: user.tipo,
+      id_rol: user.id_rol,
+      rol_nombre: user.rol_nombre
+    };
+
+    return res.json({ 
+      token,
+      usuario 
+    });
   } catch (err) {
     next(err);
   }
