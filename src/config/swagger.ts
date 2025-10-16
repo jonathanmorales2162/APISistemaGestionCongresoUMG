@@ -1,5 +1,8 @@
 import swaggerJSDoc from 'swagger-jsdoc';
+import type { Express } from 'express';
+import swaggerUi from 'swagger-ui-express';
 
+// CORREGIDO: Configuración optimizada para Vercel serverless
 const swaggerDefinition = {
   openapi: '3.0.0',
   info: {
@@ -21,7 +24,7 @@ const swaggerDefinition = {
       description: 'Servidor de desarrollo alternativo'
     },
     {
-      url: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://tu-proyecto.vercel.app',
+      url: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://congreso-umg-2025.vercel.app/',
       description: 'Servidor de producción (Vercel)'
     }
   ],
@@ -280,7 +283,6 @@ const swaggerDefinition = {
 export const swaggerOptions = {
   definition: swaggerDefinition,
   apis: [
-    // En desarrollo usa archivos TypeScript, en producción usa archivos JavaScript compilados
     process.env.NODE_ENV === 'production' 
       ? './dist/src/routes/*.js'
       : './src/routes/*.ts'
@@ -288,4 +290,51 @@ export const swaggerOptions = {
 };
 
 export const swaggerSpec = swaggerJSDoc(swaggerOptions);
+
+// CORREGIDO: Función optimizada para configurar Swagger en Vercel serverless
+export const setupSwagger = (app: Express): void => {
+  // Generar la especificación de Swagger
+  const specs = swaggerJSDoc(swaggerOptions);
+  
+  // Ruta para servir la especificación JSON
+  app.get('/api-docs.json', (_req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(specs);
+  });
+  
+  // Configuración optimizada para Vercel - sin dependencias externas
+  const swaggerUiOptions = {
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info { margin: 20px 0; }
+      .swagger-ui .scheme-container { margin: 20px 0; }
+    `,
+    customSiteTitle: 'API Sistema Gestión Congreso UMG',
+    swaggerOptions: {
+      url: '/api-docs.json', // Usar nuestra propia ruta JSON
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+      deepLinking: true,
+      layout: 'StandaloneLayout',
+      tryItOutEnabled: true,
+      supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+      docExpansion: 'list',
+      defaultModelsExpandDepth: 1,
+      defaultModelExpandDepth: 1
+    }
+  };
+  
+  // Configurar Swagger UI sin archivos estáticos externos
+  app.use('/api-docs', swaggerUi.serve);
+  app.get('/api-docs', swaggerUi.setup(specs, swaggerUiOptions));
+  
+  // Ruta raíz - Redirección a Swagger
+  app.get('/', (_req, res) => {
+    res.redirect('/api-docs');
+  });
+};
+
 export default swaggerSpec;

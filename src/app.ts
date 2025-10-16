@@ -4,9 +4,7 @@ import { rateLimit } from 'express-rate-limit';
 import hpp from 'hpp';
 import cookieParser from 'cookie-parser';
 import  { ZodError } from 'zod';
-import swaggerUi from 'swagger-ui-express';
-import swaggerJsdoc from 'swagger-jsdoc';
-import { swaggerOptions } from './config/swagger.js';
+import { setupSwagger } from './config/swagger.js';
 import rolesRouter from './routes/roles.routes.js';
 import usuariosRouter from './routes/usuarios.routes.js';
 import { databaseErrorHandler, generalErrorHandler } from './middleware/errorHandler.js';
@@ -72,49 +70,15 @@ app.use(rateLimit({
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
-// Swagger UI
-const specs = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'API Sistema Gestión Congreso UMG',
-  // Configuración para usar CDN en lugar de archivos estáticos locales (compatible con Vercel)
-  customCssUrl: 'https://unpkg.com/swagger-ui-dist@latest/swagger-ui.css',
-  customJs: [
-    'https://unpkg.com/swagger-ui-dist@latest/swagger-ui-bundle.js',
-    'https://unpkg.com/swagger-ui-dist@latest/swagger-ui-standalone-preset.js'
-  ],
-  swaggerOptions: {
-    persistAuthorization: true,
-    displayRequestDuration: true,
-    filter: true,
-    showExtensions: true,
-    showCommonExtensions: true,
-    // Configuración adicional para CDN
-    url: undefined, // Evita conflictos con la especificación inline
-    dom_id: '#swagger-ui',
-    deepLinking: true,
-    presets: [
-      'SwaggerUIBundle.presets.apis',
-      'SwaggerUIStandalonePreset'
-    ],
-    plugins: [
-      'SwaggerUIBundle.plugins.DownloadUrl'
-    ],
-    layout: 'StandaloneLayout'
-  }
-}));
-
-// Ruta raíz - Redirección a Swagger
-app.get('/', (_req, res) => {
-  res.redirect('/api-docs');
-});
+// CORREGIDO: Configuración de Swagger optimizada para Vercel serverless
+setupSwagger(app);
 
 // Healthcheck
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-// Rutas
-app.use('/roles', rolesRouter);
-app.use('/usuarios', usuariosRouter);
+// Rutas - CORREGIDO: Agregado prefijo /api para compatibilidad con Vercel
+app.use('/api/roles', rolesRouter);
+app.use('/api/usuarios', usuariosRouter);
 
 // Manejador de errores
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

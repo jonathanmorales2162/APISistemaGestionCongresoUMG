@@ -248,12 +248,18 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
  */
 
 // GET /usuarios/perfil - Obtener perfil del usuario autenticado
+// CORREGIDO: Manejo mejorado de errores para Express v5.1.0 y ES Modules
+// - Validación robusta de req.user.id
+// - Eliminación de destructuring innecesario (password no está en SELECT)
+// - Manejo explícito de errores de conexión a PostgreSQL
+// - Compatibilidad con Vercel serverless environment
 router.get('/perfil', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.user) {
+    // Validación robusta del usuario autenticado
+    if (!req.user || !req.user.id || typeof req.user.id !== 'number') {
       return res.status(401).json({
         success: false,
-        message: 'Usuario no autenticado'
+        message: 'Usuario no autenticado o ID inválido'
       });
     }
 
@@ -271,12 +277,21 @@ router.get('/perfil', authenticateToken, async (req: Request, res: Response, nex
         r.nombre as rol_nombre
       FROM usuarios u
       LEFT JOIN roles r ON u.id_rol = r.id_rol
-      WHERE u.id_usuario = $1
+      WHERE u.id_usuario = $1 AND u.id_usuario IS NOT NULL
     `;
 
-    const result = await pool.query(query, [req.user.id]);
+    // Validación adicional del ID antes de la consulta
+    const userId = req.user.id;
+    if (isNaN(userId) || userId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de usuario inválido'
+      });
+    }
 
-    if (result.rows.length === 0) {
+    const result = await pool.query(query, [userId]);
+
+    if (!result || !result.rows || result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Usuario no encontrado'
@@ -284,13 +299,27 @@ router.get('/perfil', authenticateToken, async (req: Request, res: Response, nex
     }
 
     const usuario = result.rows[0];
-    const { password, ...usuarioSinPassword } = usuario;
-
+    
+    // CORREGIDO: No intentar destructuring de 'password' ya que no está en el SELECT
+    // El campo password no se incluye en la consulta por seguridad
     return res.json({
       success: true,
-      perfil: usuarioSinPassword
+      perfil: usuario
     });
   } catch (err) {
+    // Manejo específico de errores de PostgreSQL para Vercel
+    console.error('Error en /perfil:', err);
+    
+    if (err && typeof err === 'object' && 'code' in err) {
+      // Error específico de PostgreSQL
+      return res.status(500).json({
+        success: false,
+        message: 'Error de base de datos',
+        error: process.env.NODE_ENV === 'production' ? (err as unknown as Error).message : 'Error interno del servidor'
+      });
+    }
+    
+    // Pasar otros errores al middleware de manejo de errores
     next(err);
   }
 });

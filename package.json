@@ -1,7 +1,7 @@
 {
   "name": "apisistemagestioncongresoumg",
   "version": "1.0.0",
-  "description": "",
+  "description": "API para Sistema de Gestión de Congreso UMG",
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
@@ -15,13 +15,27 @@
     "type": "git",
     "url": "git+https://github.com/jonathanmorales2162/APISistemaGestionCongresoUMG.git"
   },
-  "keywords": [],
+  "keywords": ["api", "express", "typescript", "postgresql", "vercel"],
   "author": "",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/jonathanmorales2162/APISistemaGestionCongresoUMG/issues"
   },
   "homepage": "https://github.com/jonathanmorales2162/APISistemaGestionCongresoUMG#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^4.1.12"
+  },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.9",
@@ -37,20 +51,5 @@
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "bcrypt": "^6.0.0",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
-    "express-rate-limit": "^8.1.0",
-    "hpp": "^0.2.3",
-    "jsonwebtoken": "^9.0.2",
-    "pg": "^8.16.3",
-    "pino": "^9.12.0",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "zod": "^4.1.12"
   }
 }
