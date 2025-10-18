@@ -16,6 +16,7 @@ import type {
   RespuestaPaginada
 } from '../types/participantes.types.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
+import { requirePermission, requireAnyPermission } from '../middleware/authorization.middleware.js';
 
 const router = Router();
 
@@ -534,7 +535,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.put('/:id', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', authenticateToken, requireAnyPermission(['usuarios:update_self', 'usuarios:update']), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = idParticipanteSchema.parse(req.params);
     const updateData = actualizarParticipanteSchema.parse(req.body);
@@ -683,7 +684,7 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response, next: 
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.delete('/:id', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authenticateToken, requirePermission('usuarios:delete'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = idParticipanteSchema.parse(req.params);
 

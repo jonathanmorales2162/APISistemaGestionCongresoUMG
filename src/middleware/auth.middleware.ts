@@ -1,5 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import pool from '../db/pool.js';
+import { ROLE_PERMISSIONS } from './authorization.middleware.js';
 
 // Extend the Request interface to include user property
 declare global {
@@ -9,6 +11,8 @@ declare global {
         id: number;
         email: string;
         rol: string;
+        id_rol: number;
+        permisos: string[];
       };
     }
   }
@@ -57,13 +61,49 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       return;
     }
     
-    req.user = {
-      id: userId,
-      email: '', // Se obtiene de la base de datos si es necesario
-      rol: ''    // Se obtiene de la base de datos si es necesario
-    };
+    // Obtener información completa del usuario desde la base de datos
+    const userQuery = `
+      SELECT u.id_usuario, u.correo, r.id_rol, r.nombre as rol_nombre
+      FROM usuarios u
+      INNER JOIN roles r ON u.id_rol = r.id_rol
+      WHERE u.id_usuario = $1
+    `;
     
-    next();
+    pool.query(userQuery, [userId])
+      .then(userResult => {
+        if (userResult.rows.length === 0) {
+          res.status(403).json({ 
+            success: false,
+            error: 'Usuario no encontrado',
+            message: 'El usuario no existe o está inactivo'
+          });
+          return;
+        }
+        
+        const userData = userResult.rows[0];
+        
+        // Obtener permisos basados en el rol desde la configuración interna
+        const userPermissions = ROLE_PERMISSIONS[userData.rol_nombre as keyof typeof ROLE_PERMISSIONS] || [];
+        
+        req.user = {
+          id: userId,
+          email: userData.correo,
+          rol: userData.rol_nombre,
+          id_rol: userData.id_rol,
+          permisos: userPermissions
+        };
+        
+        next();
+      })
+      .catch(err => {
+        console.error('Error al obtener usuario desde DB:', err);
+        res.status(500).json({ 
+          success: false,
+          error: 'Error de base de datos',
+          message: 'Error al obtener información del usuario'
+        });
+        return;
+      });
   } catch (error) {
     console.error('Error en authenticateToken:', error);
     

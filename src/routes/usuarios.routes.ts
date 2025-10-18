@@ -18,6 +18,7 @@ import type {
   ApiResponse 
 } from '../types/usuarios.types.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
+import { requirePermission, requireAnyPermission } from '../middleware/authorization.middleware.js';
 
 
 const router = Router();
@@ -254,7 +255,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 // - Eliminación de destructuring innecesario (password no está en SELECT)
 // - Manejo explícito de errores de conexión a PostgreSQL
 // - Compatibilidad con Vercel serverless environment
-router.get('/perfil', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/perfil', authenticateToken, requireAnyPermission(['usuarios:read_self', 'usuarios:read']), async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Validación robusta del usuario autenticado
     if (!req.user || !req.user.id || typeof req.user.id !== 'number') {
@@ -998,7 +999,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
  */
 
 // PUT /usuarios/perfil - Actualizar perfil del usuario autenticado
-router.put('/perfil', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/perfil', authenticateToken, requireAnyPermission(['usuarios:update_self', 'usuarios:update']), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -1183,7 +1184,7 @@ router.put('/perfil', authenticateToken, async (req: Request, res: Response, nex
  */
 
 // PATCH /usuarios/password - Cambiar contraseña del usuario autenticado
-router.patch('/password', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/password', authenticateToken, requireAnyPermission(['usuarios:update_self', 'usuarios:update']), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({

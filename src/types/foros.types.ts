@@ -3,7 +3,7 @@
  */
 
 // Estado del foro
-export type EstadoForo = 'activo' | 'inactivo';
+export type EstadoForo = 'A' | 'I';
 
 // Interfaz para categoría
 export interface Categoria {

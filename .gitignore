@@ -3,7 +3,10 @@ dist
 .env
 secrets/
 .vscode
-
+.trae/
+TRAE/
+rules
+project_rules.md
 # Archivos compilados de TypeScript
 *.js
 *.js.map

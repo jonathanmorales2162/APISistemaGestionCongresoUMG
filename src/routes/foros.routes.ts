@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import pool from '../db/pool.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
+import { requirePermission, requireAnyPermission } from '../middleware/authorization.middleware.js';
 import { 
   crearForoSchema, 
   actualizarForoSchema, 
@@ -76,9 +77,9 @@ const router = Router();
  *           description: Información completa de la categoría
  *         estado:
  *           type: string
- *           enum: [activo, inactivo]
- *           description: Estado del foro
- *           example: "activo"
+ *           enum: [A, I]
+ *           description: Estado del foro (A=Activo, I=Inactivo)
+ *           example: "A"
  *         id_usuario:
  *           type: integer
  *           description: ID del usuario creador del foro
@@ -110,9 +111,9 @@ const router = Router();
  *           example: 3
  *         estado:
  *           type: string
- *           enum: [activo, inactivo]
- *           description: Estado del foro (opcional, por defecto 'activo')
- *           example: "activo"
+ *           enum: [A, I]
+ *           description: Estado del foro (opcional, por defecto 'A'=Activo)
+ *           example: "A"
  *       required:
  *         - titulo
  *         - descripcion
@@ -135,18 +136,18 @@ const router = Router();
  *           example: 4
  *         estado:
  *           type: string
- *           enum: [activo, inactivo]
- *           description: Estado del foro
- *           example: "inactivo"
+ *           enum: [A, I]
+ *           description: Estado del foro (A=Activo, I=Inactivo)
+ *           example: "I"
  *
  *     CambiarEstadoRequest:
  *       type: object
  *       properties:
  *         estado:
  *           type: string
- *           enum: [activo, inactivo]
- *           description: Nuevo estado del foro
- *           example: "inactivo"
+ *           enum: [A, I]
+ *           description: Nuevo estado del foro (A=Activo, I=Inactivo)
+ *           example: "I"
  *       required:
  *         - estado
  *
@@ -232,7 +233,7 @@ const router = Router();
  *             titulo: "Charla de Ciberseguridad"
  *             descripcion: "Discusión sobre buenas prácticas de seguridad en redes."
  *             id_categoria: 3
- *             estado: "activo"
+ *             estado: "A"
  *     responses:
  *       201:
  *         description: Foro creado exitosamente
@@ -253,7 +254,7 @@ const router = Router();
  *                 categoria:
  *                   id_categoria: 3
  *                   nombre: "Ciberseguridad"
- *                 estado: "activo"
+ *                 estado: "A"
  *                 id_usuario: 1
  *       400:
  *         description: Error de validación
@@ -274,20 +275,10 @@ const router = Router();
  *       500:
  *         description: Error interno del servidor
  */
-router.post('/', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+router.post('/', authenticateToken, requirePermission('foros:create'), async (req: Request, res: Response): Promise<void> => {
   try {
     // Validar datos de entrada
     const datosValidados = crearForoSchema.parse(req.body) as CrearForoRequest;
-
-    // Verificar que el usuario tenga permisos (admin u organizador)
-    const usuario = (req as any).user;
-    if (!usuario || (usuario.rol !== 'admin' && usuario.rol !== 'organizador')) {
-      res.status(403).json({
-        success: false,
-        message: 'Acceso denegado. Se requiere rol de administrador u organizador.'
-      } as ApiResponse<null>);
-      return;
-    }
 
     // Verificar que la categoría existe
     const categoriaQuery = 'SELECT id_categoria, nombre FROM categorias WHERE id_categoria = $1';
@@ -331,7 +322,7 @@ router.post('/', authenticateToken, async (req: Request, res: Response): Promise
         id_categoria: categoria.id_categoria,
         nombre: categoria.nombre
       },
-      estado: nuevoForo.estado === 'activo' ? 'activo' : 'inactivo',
+      estado: nuevoForo.estado,
       id_usuario: nuevoForo.id_usuario
     };
 
@@ -393,7 +384,7 @@ router.post('/', authenticateToken, async (req: Request, res: Response): Promise
  *             titulo: "Charla de Ciberseguridad Actualizada"
  *             descripcion: "Discusión actualizada sobre buenas prácticas de seguridad."
  *             id_categoria: 4
- *             estado: "activo"
+ *             estado: "A"
  *     responses:
  *       200:
  *         description: Foro actualizado exitosamente
@@ -414,7 +405,7 @@ router.post('/', authenticateToken, async (req: Request, res: Response): Promise
  *                 categoria:
  *                   id_categoria: 4
  *                   nombre: "Tecnología"
- *                 estado: "activo"
+ *                 estado: "A"
  *                 id_usuario: 1
  *       400:
  *         description: Error de validación
@@ -427,21 +418,11 @@ router.post('/', authenticateToken, async (req: Request, res: Response): Promise
  *       500:
  *         description: Error interno del servidor
  */
-router.put('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', authenticateToken, requirePermission('foros:update'), async (req: Request, res: Response): Promise<void> => {
   try {
     // Validar parámetros y datos
     const { id } = idForoSchema.parse(req.params) as unknown as ForoIdParams;
     const datosValidados = actualizarForoSchema.parse(req.body) as ActualizarForoRequest;
-
-    // Verificar que el usuario tenga permisos (admin u organizador)
-    const usuario = (req as any).user;
-    if (!usuario || (usuario.rol !== 'admin' && usuario.rol !== 'organizador')) {
-      res.status(403).json({
-        success: false,
-        message: 'Acceso denegado. Se requiere rol de administrador u organizador.'
-      } as ApiResponse<null>);
-      return;
-    }
 
     // Verificar que el foro existe
     const foroExistente = await pool.query('SELECT id_foro FROM foros WHERE id_foro = $1', [id]);
@@ -535,7 +516,7 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response): Promi
         id_categoria: categoriaResult.rows[0].id_categoria,
         nombre: categoriaResult.rows[0].nombre
       } : undefined,
-      estado: foroActualizado.estado === 'activo' ? 'activo' : 'inactivo',
+      estado: foroActualizado.estado,
       id_usuario: foroActualizado.id_usuario
     };
 
@@ -594,7 +575,7 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response): Promi
  *           schema:
  *             $ref: '#/components/schemas/CambiarEstadoRequest'
  *           example:
- *             estado: "inactivo"
+ *             estado: "I"
  *     responses:
  *       200:
  *         description: Estado del foro actualizado correctamente
@@ -616,21 +597,11 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response): Promi
  *       500:
  *         description: Error interno del servidor
  */
-router.patch('/:id/estado', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+router.patch('/:id/estado', authenticateToken, requirePermission('foros:update'), async (req: Request, res: Response): Promise<void> => {
   try {
     // Validar parámetros y datos
     const { id } = idForoSchema.parse(req.params) as unknown as ForoIdParams;
     const { estado } = cambiarEstadoSchema.parse(req.body) as CambiarEstadoRequest;
-
-    // Verificar que el usuario tenga permisos (admin u organizador)
-    const usuario = (req as any).user;
-    if (!usuario || (usuario.rol !== 'admin' && usuario.rol !== 'organizador')) {
-      res.status(403).json({
-        success: false,
-        message: 'Acceso denegado. Se requiere rol de administrador u organizador.'
-      } as ApiResponse<null>);
-      return;
-    }
 
     // Verificar que el foro existe
     const foroExistente = await pool.query('SELECT id_foro FROM foros WHERE id_foro = $1', [id]);
@@ -714,20 +685,10 @@ router.patch('/:id/estado', authenticateToken, async (req: Request, res: Respons
  *       500:
  *         description: Error interno del servidor
  */
-router.delete('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+router.delete('/:id', authenticateToken, requirePermission('foros:delete'), async (req: Request, res: Response): Promise<void> => {
   try {
     // Validar parámetros
     const { id } = idForoSchema.parse(req.params) as unknown as ForoIdParams;
-
-    // Verificar que el usuario sea administrador
-    const usuario = (req as any).user;
-    if (!usuario || usuario.rol !== 'admin') {
-      res.status(403).json({
-        success: false,
-        message: 'Acceso denegado. Solo los administradores pueden eliminar foros.'
-      } as ApiResponse<null>);
-      return;
-    }
 
     // Verificar que el foro existe
     const foroExistente = await pool.query('SELECT id_foro FROM foros WHERE id_foro = $1', [id]);
@@ -806,7 +767,7 @@ router.delete('/:id', authenticateToken, async (req: Request, res: Response): Pr
  *                 categoria:
  *                   id_categoria: 3
  *                   nombre: "Ciberseguridad"
- *                 estado: "activo"
+ *                 estado: "A"
  *                 id_usuario: 1
  *       400:
  *         description: ID de foro inválido
@@ -860,7 +821,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
         id_categoria: row.categoria_id,
         nombre: row.categoria_nombre
       } : undefined,
-      estado: row.estado === 'activo' ? 'activo' : 'inactivo',
+      estado: row.estado,
       id_usuario: row.id_usuario
     };
 
@@ -905,9 +866,9 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
  *         name: estado
  *         schema:
  *           type: string
- *           enum: [activo, inactivo]
- *         description: Filtrar por estado del foro
- *         example: "activo"
+ *           enum: [A, I]
+ *         description: Filtrar por estado del foro (A=Activo, I=Inactivo)
+ *         example: "A"
  *       - in: query
  *         name: categoria
  *         schema:
@@ -957,7 +918,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
  *                   categoria:
  *                     id_categoria: 1
  *                     nombre: "Tecnología"
- *                   estado: "activo"
+ *                   estado: "A"
  *                   id_usuario: 1
  *                 - id_foro: 2
  *                   titulo: "Blockchain en la industria"
@@ -968,7 +929,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
  *                   categoria:
  *                     id_categoria: 2
  *                     nombre: "Innovación"
- *                   estado: "inactivo"
+ *                   estado: "I"
  *                   id_usuario: 2
  *               pagination:
  *                 pagina_actual: 1
@@ -1065,7 +1026,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         id_categoria: row.categoria_id,
         nombre: row.categoria_nombre
       } : undefined,
-      estado: row.estado === 'A' ? 'activo' : 'inactivo',
+      estado: row.estado,
       id_usuario: row.id_usuario
     }));
 

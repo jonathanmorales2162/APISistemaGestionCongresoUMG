@@ -4,8 +4,8 @@ import { z } from 'zod';
  * Esquemas de validación Zod para el módulo de Foros
  */
 
-// Enum para el estado del foro
-export const estadoForoEnum = z.enum(['activo', 'inactivo']);
+// Enum para el estado del foro (coincide con la base de datos CHAR(1))
+export const estadoForoEnum = z.enum(['A', 'I']);
 
 // Schema para crear un nuevo foro
 export const crearForoSchema = z.object({
@@ -26,7 +26,7 @@ export const crearForoSchema = z.object({
     .int('El ID de categoría debe ser un número entero')
     .positive('El ID de categoría debe ser mayor a 0'),
 
-  estado: estadoForoEnum.optional().default('activo')
+  estado: estadoForoEnum.optional().default('A')
 });
 
 // Schema para actualizar un foro

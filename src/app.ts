@@ -9,6 +9,8 @@ import rolesRouter from './routes/roles.routes.js';
 import usuariosRouter from './routes/usuarios.routes.js';
 import participantesRouter from './routes/participantes.routes.js';
 import forosRouter from './routes/foros.routes.js';
+import talleresRouter from './routes/talleres.routes.js';
+import competenciasRouter from './routes/competencias.routes.js';
 import { databaseErrorHandler, generalErrorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -83,6 +85,8 @@ app.use('/api/roles', rolesRouter);
 app.use('/api/usuarios', usuariosRouter);
 app.use('/api/participantes', participantesRouter);
 app.use('/api/foros', forosRouter);
+app.use('/api/talleres', talleresRouter);
+app.use('/api/competencias', competenciasRouter);
 
 // Manejador de errores
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
