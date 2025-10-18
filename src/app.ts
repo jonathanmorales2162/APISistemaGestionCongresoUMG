@@ -7,6 +7,8 @@ import  { ZodError } from 'zod';
 import { setupSwagger } from './config/swagger.js';
 import rolesRouter from './routes/roles.routes.js';
 import usuariosRouter from './routes/usuarios.routes.js';
+import participantesRouter from './routes/participantes.routes.js';
+import forosRouter from './routes/foros.routes.js';
 import { databaseErrorHandler, generalErrorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -79,6 +81,8 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 // Rutas - CORREGIDO: Agregado prefijo /api para compatibilidad con Vercel
 app.use('/api/roles', rolesRouter);
 app.use('/api/usuarios', usuariosRouter);
+app.use('/api/participantes', participantesRouter);
+app.use('/api/foros', forosRouter);
 
 // Manejador de errores
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

@@ -2,6 +2,7 @@ import { Router } from 'express'; // valor
 import type { Request, Response, NextFunction } from 'express'; // tipos
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { z } from 'zod';
 import pool from '../db/pool.js';
 import { 
@@ -324,6 +325,127 @@ router.get('/perfil', authenticateToken, async (req: Request, res: Response, nex
   }
 });
 
+/**
+ * @swagger
+ * /usuarios/validate:
+ *   get:
+ *     summary: Validar token de acceso actual
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Token válido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 valid:
+ *                   type: boolean
+ *                   example: true
+ *                 usuario:
+ *                   type: object
+ *                   description: Información del usuario autenticado
+ *                   properties:
+ *                     id_usuario:
+ *                       type: integer
+ *                       example: 1
+ *                     nombre:
+ *                       type: string
+ *                       example: "Juan"
+ *                     apellido:
+ *                       type: string
+ *                       example: "Pérez"
+ *                     correo:
+ *                       type: string
+ *                       example: "juan.perez@email.com"
+ *                     telefono:
+ *                       type: string
+ *                       example: "+502 1234-5678"
+ *                     colegio:
+ *                       type: string
+ *                       example: "Universidad Mariano Gálvez"
+ *                     tipo:
+ *                       type: string
+ *                       enum: ["I", "E"]
+ *                       example: "I"
+ *                     rol:
+ *                       type: object
+ *                       properties:
+ *                         id_rol:
+ *                           type: integer
+ *                           example: 2
+ *                         nombre:
+ *                           type: string
+ *                           example: "Participante"
+ *       401:
+ *         description: Token inválido o expirado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/validate', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        valid: false,
+        message: 'Token inválido' 
+      });
+    }
+
+    // Obtener información completa del usuario
+    const userResult = await pool.query(
+      `SELECT 
+        u.id_usuario, 
+        u.nombre, 
+        u.apellido, 
+        u.correo, 
+        u.telefono, 
+        u.colegio, 
+        u.tipo, 
+        u.id_rol,
+        r.nombre as rol_nombre
+      FROM usuarios u
+      LEFT JOIN roles r ON u.id_rol = r.id_rol
+      WHERE u.id_usuario = $1`,
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ 
+        valid: false,
+        message: 'Usuario no encontrado' 
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    // Preparar datos del usuario
+    const usuario = {
+      id_usuario: user.id_usuario,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      correo: user.correo,
+      telefono: user.telefono,
+      colegio: user.colegio,
+      tipo: user.tipo,
+      rol: {
+        id_rol: user.id_rol,
+        nombre: user.rol_nombre
+      }
+    };
+
+    return res.json({
+      valid: true,
+      usuario
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /usuarios/:id - Obtener un usuario por ID
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -571,6 +693,10 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
  *                   type: string
  *                   description: Token JWT para autenticación
  *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 refreshToken:
+ *                   type: string
+ *                   description: Token para renovar el access token
+ *                   example: "a1b2c3d4e5f6789..."
  *                 usuario:
  *                   type: object
  *                   description: Información del usuario autenticado
@@ -605,14 +731,18 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
  *                       enum: ["I", "E"]
  *                       description: Tipo de usuario (I=Interno, E=Externo)
  *                       example: "I"
- *                     id_rol:
- *                       type: integer
- *                       description: ID del rol asignado al usuario
- *                       example: 2
- *                     rol_nombre:
- *                       type: string
- *                       description: Nombre del rol asignado al usuario
- *                       example: "Participante"
+ *                     rol:
+ *                       type: object
+ *                       description: Información del rol asignado al usuario
+ *                       properties:
+ *                         id_rol:
+ *                           type: integer
+ *                           description: ID del rol
+ *                           example: 2
+ *                         nombre:
+ *                           type: string
+ *                           description: Nombre del rol
+ *                           example: "Participante"
  *       400:
  *         description: Error de validación
  *         content:
@@ -694,6 +824,24 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       { expiresIn: '1h' }
     );
 
+    // Generar refresh token
+    const refreshToken = crypto.randomBytes(64).toString('hex');
+    const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const refreshExpiration = new Date();
+    refreshExpiration.setDate(refreshExpiration.getDate() + 7); // 7 días
+
+    // Revocar refresh tokens anteriores del usuario
+    await pool.query(
+      'UPDATE refresh_tokens SET revocado = true WHERE id_usuario = $1 AND revocado = false',
+      [user.id_usuario]
+    );
+
+    // Guardar nuevo refresh token
+    await pool.query(
+      'INSERT INTO refresh_tokens (id_usuario, token_hash, expiracion) VALUES ($1, $2, $3)',
+      [user.id_usuario, refreshTokenHash, refreshExpiration]
+    );
+
     // Preparar datos del usuario sin el password_hash
     const usuario = {
       id_usuario: user.id_usuario,
@@ -703,12 +851,15 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       telefono: user.telefono,
       colegio: user.colegio,
       tipo: user.tipo,
-      id_rol: user.id_rol,
-      rol_nombre: user.rol_nombre
+      rol: {
+        id_rol: user.id_rol,
+        nombre: user.rol_nombre
+      }
     };
 
     return res.json({ 
       token,
+      refreshToken,
       usuario 
     });
   } catch (err) {
@@ -1394,6 +1545,198 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
     res.json(response);
   } catch (error) {
     next(error);
+  }
+});
+
+
+/**
+ * @swagger
+ * /usuarios/refresh:
+ *   post:
+ *     summary: Renovar token de acceso usando refresh token
+ *     tags: [Usuarios]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token válido
+ *                 example: "a1b2c3d4e5f6..."
+ *     responses:
+ *       200:
+ *         description: Token renovado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: Nuevo token JWT
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 refreshToken:
+ *                   type: string
+ *                   description: Nuevo refresh token
+ *                   example: "a1b2c3d4e5f6..."
+ *                 usuario:
+ *                   type: object
+ *                   description: Información del usuario
+ *                   properties:
+ *                     id_usuario:
+ *                       type: integer
+ *                       example: 1
+ *                     nombre:
+ *                       type: string
+ *                       example: "Juan"
+ *                     apellido:
+ *                       type: string
+ *                       example: "Pérez"
+ *                     correo:
+ *                       type: string
+ *                       example: "juan.perez@email.com"
+ *                     telefono:
+ *                       type: string
+ *                       example: "+502 1234-5678"
+ *                     colegio:
+ *                       type: string
+ *                       example: "Universidad Mariano Gálvez"
+ *                     tipo:
+ *                       type: string
+ *                       enum: ["I", "E"]
+ *                       example: "I"
+ *                     rol:
+ *                       type: object
+ *                       properties:
+ *                         id_rol:
+ *                           type: integer
+ *                           example: 2
+ *                         nombre:
+ *                           type: string
+ *                           example: "Participante"
+ *       401:
+ *         description: Refresh token inválido o expirado
+ *       400:
+ *         description: Error de validación
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.post('/refresh', async (req: Request, res: Response, next: NextFunction) => {
+  const refreshSchema = z.object({
+    refreshToken: z.string().min(1, 'Refresh token es requerido')
+  });
+
+  const parsed = refreshSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ errors: parsed.error.issues });
+  }
+
+  const { refreshToken } = parsed.data;
+
+  try {
+    // Hash del refresh token recibido
+    const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+
+    // Buscar el refresh token en la base de datos
+    const tokenResult = await pool.query(
+      `SELECT rt.id_usuario, rt.expiracion, rt.revocado
+       FROM refresh_tokens rt
+       WHERE rt.token_hash = $1 AND rt.revocado = false`,
+      [refreshTokenHash]
+    );
+
+    if (tokenResult.rows.length === 0) {
+      return res.status(401).json({ message: 'Refresh token inválido' });
+    }
+
+    const tokenData = tokenResult.rows[0];
+
+    // Verificar si el token ha expirado
+    if (new Date() > new Date(tokenData.expiracion)) {
+      // Revocar el token expirado
+      await pool.query(
+        'UPDATE refresh_tokens SET revocado = true WHERE token_hash = $1',
+        [refreshTokenHash]
+      );
+      return res.status(401).json({ message: 'Refresh token expirado' });
+    }
+
+    // Obtener información del usuario
+    const userResult = await pool.query(
+      `SELECT 
+        u.id_usuario, 
+        u.nombre, 
+        u.apellido, 
+        u.correo, 
+        u.telefono, 
+        u.colegio, 
+        u.tipo, 
+        u.id_rol,
+        r.nombre as rol_nombre
+      FROM usuarios u
+      LEFT JOIN roles r ON u.id_rol = r.id_rol
+      WHERE u.id_usuario = $1`,
+      [tokenData.id_usuario]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ message: 'Usuario no encontrado' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Generar nuevo access token
+    const newToken = jwt.sign(
+      { id_usuario: user.id_usuario },
+      process.env.JWT_SECRET!,
+      { expiresIn: '1h' }
+    );
+
+    // Generar nuevo refresh token
+    const newRefreshToken = crypto.randomBytes(64).toString('hex');
+    const newRefreshTokenHash = crypto.createHash('sha256').update(newRefreshToken).digest('hex');
+    const newRefreshExpiration = new Date();
+    newRefreshExpiration.setDate(newRefreshExpiration.getDate() + 7); // 7 días
+
+    // Revocar el refresh token usado
+    await pool.query(
+      'UPDATE refresh_tokens SET revocado = true, reemplazado_por = $1 WHERE token_hash = $2',
+      [newRefreshTokenHash, refreshTokenHash]
+    );
+
+    // Guardar nuevo refresh token
+    await pool.query(
+      'INSERT INTO refresh_tokens (id_usuario, token_hash, expiracion) VALUES ($1, $2, $3)',
+      [user.id_usuario, newRefreshTokenHash, newRefreshExpiration]
+    );
+
+    // Preparar datos del usuario
+    const usuario = {
+      id_usuario: user.id_usuario,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      correo: user.correo,
+      telefono: user.telefono,
+      colegio: user.colegio,
+      tipo: user.tipo,
+      rol: {
+        id_rol: user.id_rol,
+        nombre: user.rol_nombre
+      }
+    };
+
+    return res.json({
+      token: newToken,
+      refreshToken: newRefreshToken,
+      usuario
+    });
+  } catch (err) {
+    next(err);
   }
 });
 
