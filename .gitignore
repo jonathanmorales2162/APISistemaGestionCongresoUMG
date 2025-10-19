@@ -31,3 +31,6 @@ yarn-error.log*
 # Archivos de sistema
 .DS_Store
 Thumbs.db
+
+# Documentación de endpoints (no subir a GitHub)
+ENDPOINTS_DOCUMENTATION.md
