@@ -21,6 +21,10 @@ export const crearCompetenciaSchema = z.object({
   id_categoria: z.number()
     .int('El ID de categoría debe ser un número entero')
     .positive('El ID de categoría debe ser mayor a 0')
+    .optional(),
+  id_staff_responsable: z.number()
+    .int('El ID del staff responsable debe ser un número entero')
+    .positive('El ID del staff responsable debe ser mayor a 0')
     .optional()
 });
 
@@ -49,6 +53,10 @@ export const actualizarCompetenciaSchema = z.object({
   id_categoria: z.number()
     .int('El ID de categoría debe ser un número entero')
     .positive('El ID de categoría debe ser mayor a 0')
+    .optional(),
+  id_staff_responsable: z.number()
+    .int('El ID del staff responsable debe ser un número entero')
+    .positive('El ID del staff responsable debe ser mayor a 0')
     .optional()
 });
 

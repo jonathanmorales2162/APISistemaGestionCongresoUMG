@@ -6,6 +6,7 @@ export interface Taller {
   cupo: number;
   horario: Date;
   id_categoria?: number;
+  id_staff_ponente?: number;
   creado_en: Date;
 }
 
@@ -24,6 +25,7 @@ export interface TallerConCategoria {
   cupo: number;
   horario: Date;
   categoria?: Categoria;
+  id_staff_ponente?: number;
   creado_en: Date;
 }
 
@@ -34,6 +36,7 @@ export interface CrearTallerRequest {
   cupo: number;
   horario: string; // ISO string para fecha/hora
   id_categoria?: number;
+  id_staff_ponente?: number;
 }
 
 // Request para actualizar taller
@@ -43,6 +46,7 @@ export interface ActualizarTallerRequest {
   cupo?: number;
   horario?: string; // ISO string para fecha/hora
   id_categoria?: number;
+  id_staff_ponente?: number;
 }
 
 // Respuesta estándar de la API

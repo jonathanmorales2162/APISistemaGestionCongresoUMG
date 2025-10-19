@@ -16,6 +16,7 @@ import inscripcionesRouter from './routes/inscripciones.routes.js';
 import asistenciaRouter from './routes/asistencia.routes.js';
 import diplomasRouter from './routes/diplomas.routes.js';
 import resultadosRouter from './routes/resultados.routes.js';
+import viewsRouter from './routes/views.routes.js';
 import { databaseErrorHandler, generalErrorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -97,6 +98,7 @@ app.use('/api/inscripciones', inscripcionesRouter);
 app.use('/api/asistencia', asistenciaRouter);
 app.use('/api/diplomas', diplomasRouter);
 app.use('/api/resultados', resultadosRouter);
+app.use('/api/views', viewsRouter);
 
 // Manejador de errores
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

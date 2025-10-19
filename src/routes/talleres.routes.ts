@@ -93,9 +93,9 @@ router.post('/', authenticateToken, requireAnyPermission(['talleres:create', 'ta
     }
 
     const insertQuery = `
-      INSERT INTO talleres (titulo, descripcion, cupo, horario, id_categoria)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id_taller, titulo, descripcion, cupo, horario, id_categoria, creado_en
+      INSERT INTO talleres (titulo, descripcion, cupo, horario, id_categoria, id_staff_ponente)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id_taller, titulo, descripcion, cupo, horario, id_categoria, id_staff_ponente, creado_en
     `;
 
     const values = [
@@ -103,7 +103,8 @@ router.post('/', authenticateToken, requireAnyPermission(['talleres:create', 'ta
       tallerData.descripcion,
       tallerData.cupo,
       tallerData.horario,
-      tallerData.id_categoria || null
+      tallerData.id_categoria || null,
+      tallerData.id_staff_ponente || null
     ];
 
     const result = await pool.query(insertQuery, values);
@@ -297,6 +298,7 @@ router.get('/', async (req: Request, res: Response, next) => {
         t.descripcion,
         t.cupo,
         t.horario,
+        t.id_staff_ponente,
         t.creado_en,
         c.id_categoria,
         c.nombre as categoria_nombre,
@@ -316,6 +318,7 @@ router.get('/', async (req: Request, res: Response, next) => {
       descripcion: row.descripcion,
       cupo: row.cupo,
       horario: row.horario,
+      id_staff_ponente: row.id_staff_ponente,
       creado_en: row.creado_en,
       categoria: row.id_categoria ? {
         id_categoria: row.id_categoria,
@@ -392,6 +395,7 @@ router.get('/:id', async (req: Request, res: Response, next) => {
         t.descripcion,
         t.cupo,
         t.horario,
+        t.id_staff_ponente,
         t.creado_en,
         c.id_categoria,
         c.nombre as categoria_nombre,
@@ -417,6 +421,7 @@ router.get('/:id', async (req: Request, res: Response, next) => {
       descripcion: row.descripcion,
       cupo: row.cupo,
       horario: row.horario,
+      id_staff_ponente: row.id_staff_ponente,
       creado_en: row.creado_en,
       categoria: row.id_categoria ? {
         id_categoria: row.id_categoria,
@@ -558,6 +563,12 @@ router.put('/:id', authenticateToken, requireAnyPermission(['talleres:update', '
       paramIndex++;
     }
 
+    if (updateData.id_staff_ponente !== undefined) {
+      updateFields.push(`id_staff_ponente = $${paramIndex}`);
+      updateValues.push(updateData.id_staff_ponente);
+      paramIndex++;
+    }
+
     if (updateFields.length === 0) {
       return res.status(400).json({
         success: false,
@@ -572,7 +583,7 @@ router.put('/:id', authenticateToken, requireAnyPermission(['talleres:update', '
       UPDATE talleres 
       SET ${updateFields.join(', ')}
       WHERE id_taller = $${paramIndex}
-      RETURNING id_taller, titulo, descripcion, cupo, horario, id_categoria, creado_en
+      RETURNING id_taller, titulo, descripcion, cupo, horario, id_categoria, id_staff_ponente, creado_en
     `;
 
     const result = await pool.query(updateQuery, updateValues);

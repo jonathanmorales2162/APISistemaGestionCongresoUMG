@@ -93,9 +93,9 @@ router.post('/', authenticateToken, requireAnyPermission(['competencias:create',
     }
 
     const insertQuery = `
-      INSERT INTO competencias (titulo, descripcion, cupo, horario, id_categoria)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id_competencia, titulo, descripcion, cupo, horario, id_categoria, creado_en
+      INSERT INTO competencias (titulo, descripcion, cupo, horario, id_categoria, id_staff_responsable)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id_competencia, titulo, descripcion, cupo, horario, id_categoria, id_staff_responsable, creado_en
     `;
 
     const values = [
@@ -103,7 +103,8 @@ router.post('/', authenticateToken, requireAnyPermission(['competencias:create',
       competenciaData.descripcion,
       competenciaData.cupo,
       competenciaData.horario,
-      competenciaData.id_categoria || null
+      competenciaData.id_categoria || null,
+      competenciaData.id_staff_responsable || null
     ];
 
     const result = await pool.query(insertQuery, values);
@@ -297,6 +298,7 @@ router.get('/', async (req: Request, res: Response, next) => {
         c.descripcion,
         c.cupo,
         c.horario,
+        c.id_staff_responsable,
         c.creado_en,
         cat.id_categoria,
         cat.nombre as categoria_nombre,
@@ -316,6 +318,7 @@ router.get('/', async (req: Request, res: Response, next) => {
       descripcion: row.descripcion,
       cupo: row.cupo,
       horario: row.horario,
+      id_staff_responsable: row.id_staff_responsable,
       creado_en: row.creado_en,
       categoria: row.id_categoria ? {
         id_categoria: row.id_categoria,
@@ -392,6 +395,7 @@ router.get('/:id', async (req: Request, res: Response, next) => {
         c.descripcion,
         c.cupo,
         c.horario,
+        c.id_staff_responsable,
         c.creado_en,
         cat.id_categoria,
         cat.nombre as categoria_nombre,
@@ -417,6 +421,7 @@ router.get('/:id', async (req: Request, res: Response, next) => {
       descripcion: row.descripcion,
       cupo: row.cupo,
       horario: row.horario,
+      id_staff_responsable: row.id_staff_responsable,
       creado_en: row.creado_en,
       categoria: row.id_categoria ? {
         id_categoria: row.id_categoria,
@@ -558,6 +563,12 @@ router.put('/:id', authenticateToken, requireAnyPermission(['competencias:update
       paramIndex++;
     }
 
+    if (updateData.id_staff_responsable !== undefined) {
+      updateFields.push(`id_staff_responsable = $${paramIndex}`);
+      updateValues.push(updateData.id_staff_responsable);
+      paramIndex++;
+    }
+
     if (updateFields.length === 0) {
       return res.status(400).json({
         success: false,
@@ -572,7 +583,7 @@ router.put('/:id', authenticateToken, requireAnyPermission(['competencias:update
       UPDATE competencias 
       SET ${updateFields.join(', ')}
       WHERE id_competencia = $${paramIndex}
-      RETURNING id_competencia, titulo, descripcion, cupo, horario, id_categoria, creado_en
+      RETURNING id_competencia, titulo, descripcion, cupo, horario, id_categoria, id_staff_responsable, creado_en
     `;
 
     const result = await pool.query(updateQuery, updateValues);
