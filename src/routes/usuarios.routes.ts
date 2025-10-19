@@ -9,6 +9,7 @@ import pool from '../db/pool.js';
 import { 
   crearUsuarioSchema, 
   actualizarUsuarioSchema, 
+  actualizarPerfilSchema,
   filtrosUsuariosSchema,
   idUsuarioSchema,
   loginUsuarioSchema
@@ -220,6 +221,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       telefono: row.telefono,
       colegio: row.colegio,
       tipo: row.tipo,
+      foto_url: row.foto_url,
       rol: {
         id_rol: row.id_rol,
         nombre: row.rol_nombre || 'Sin rol'
@@ -463,6 +465,7 @@ router.get('/validate', authenticateToken, async (req: Request, res: Response, n
         u.colegio, 
         u.tipo, 
         u.id_rol,
+        u.foto_url,
         r.nombre as rol_nombre
       FROM usuarios u
       LEFT JOIN roles r ON u.id_rol = r.id_rol
@@ -500,6 +503,7 @@ router.get('/validate', authenticateToken, async (req: Request, res: Response, n
       telefono: user.telefono,
       colegio: user.colegio,
       tipo: user.tipo,
+      foto_url: user.foto_url,
       rol: {
         id_rol: user.id_rol,
         nombre: user.rol_nombre
@@ -686,9 +690,9 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     // Insertar el nuevo usuario
     const insertQuery = `
       INSERT INTO usuarios (
-        nombre, apellido, correo, telefono, colegio, tipo, password_hash, id_rol
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING id_usuario, nombre, apellido, correo, telefono, colegio, tipo, id_rol, creado_en
+        nombre, apellido, correo, telefono, colegio, tipo, password_hash, id_rol, foto_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING id_usuario, nombre, apellido, correo, telefono, colegio, tipo, id_rol, foto_url, creado_en
     `;
 
     const values = [
@@ -699,7 +703,8 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       userData.colegio || null,
       userData.tipo,
       passwordHash,
-      userData.id_rol
+      userData.id_rol,
+      userData.foto_url || null
     ];
 
     const result = await pool.query(insertQuery, values);
@@ -878,6 +883,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
         u.colegio, 
         u.tipo, 
         u.id_rol,
+        u.foto_url,
         r.nombre as rol_nombre
       FROM usuarios u
       LEFT JOIN roles r ON u.id_rol = r.id_rol
@@ -931,6 +937,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       telefono: user.telefono,
       colegio: user.colegio,
       tipo: user.tipo,
+      foto_url: user.foto_url,
       rol: {
         id_rol: user.id_rol,
         nombre: user.rol_nombre
@@ -1078,7 +1085,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
  */
 
 // PUT /usuarios/perfil - Actualizar perfil del usuario autenticado
-router.put('/perfil', authenticateToken, requireAnyPermission(['usuarios:update_self', 'usuarios:update']), async (req: Request, res: Response, next: NextFunction) => {
+router.put('/perfil', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -1087,29 +1094,14 @@ router.put('/perfil', authenticateToken, requireAnyPermission(['usuarios:update_
       });
     }
 
-    const updateData = actualizarUsuarioSchema.parse(req.body);
+    // Usar el esquema específico para perfil que excluye campos sensibles
+    const updateData = actualizarPerfilSchema.parse(req.body);
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({
         success: false,
         message: 'No se proporcionaron campos para actualizar'
       });
-    }
-
-
-    // Verificar si el rol existe (si se está actualizando)
-    if (updateData.id_rol) {
-      const roleCheck = await pool.query(
-        'SELECT id_rol FROM roles WHERE id_rol = $1',
-        [updateData.id_rol]
-      );
-
-      if (roleCheck.rows.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'El rol especificado no existe'
-        });
-      }
     }
 
     // Construir la consulta de actualización dinámicamente
@@ -1136,7 +1128,7 @@ router.put('/perfil', authenticateToken, requireAnyPermission(['usuarios:update_
     return res.json({
       success: true,
       message: 'Perfil actualizado exitosamente',
-      usuario: result.rows[0]
+      data: result.rows[0]
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -1532,7 +1524,7 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
       UPDATE usuarios 
       SET ${updateFields.join(', ')}
       WHERE id_usuario = $${paramCount}
-      RETURNING id_usuario, nombre, apellido, correo, telefono, colegio, tipo, id_rol, creado_en
+      RETURNING id_usuario, nombre, apellido, correo, telefono, colegio, tipo, id_rol, foto_url, creado_en
     `;
 
     const result = await pool.query(updateQuery, values);

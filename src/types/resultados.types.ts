@@ -68,3 +68,35 @@ export interface ResultadoFilters {
   limit?: number;
   offset?: number;
 }
+
+// Tipo para estadísticas de resultados
+export interface EstadisticasResultados {
+  total_resultados: number;
+  total_competencias_con_resultados: number;
+  total_participantes_con_resultados: number;
+  distribucion_posiciones: {
+    primer_lugar: number;
+    segundo_lugar: number;
+    tercer_lugar: number;
+    otras_posiciones: number;
+  };
+  resultados_por_competencia: {
+    id_competencia: number;
+    titulo_competencia: string;
+    total_resultados: number;
+  }[];
+  top_participantes: {
+    id_usuario: number;
+    nombre_completo: string;
+    total_participaciones: number;
+    mejores_posiciones: number;
+  }[];
+}
+
+// Tipo para respuesta de estadísticas
+export interface EstadisticasResultadosResponse {
+  success: boolean;
+  data?: EstadisticasResultados;
+  message?: string;
+  error?: string;
+}

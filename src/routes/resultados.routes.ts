@@ -17,7 +17,9 @@ import {
   ResultadoConDetalles,
   ResultadoResponse,
   ResultadoDetallesResponse,
-  ResultadoFilters
+  ResultadoFilters,
+  EstadisticasResultados,
+  EstadisticasResultadosResponse
 } from '../types/resultados.types.js';
 
 const router = Router();
@@ -645,6 +647,173 @@ router.delete('/:id', authenticateToken, requireAnyPermission(['resultados:delet
     }
 
     console.error('Error al eliminar resultado:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /resultados/estadisticas:
+ *   get:
+ *     summary: Obtener estadísticas de resultados
+ *     description: Obtiene estadísticas generales de los resultados de competencias
+ *     tags: [Resultados]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Estadísticas obtenidas exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Estadísticas obtenidas exitosamente"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total_resultados:
+ *                       type: integer
+ *                       description: Total de resultados registrados
+ *                     total_competencias_con_resultados:
+ *                       type: integer
+ *                       description: Total de competencias que tienen resultados
+ *                     total_participantes_con_resultados:
+ *                       type: integer
+ *                       description: Total de participantes con resultados
+ *                     distribucion_posiciones:
+ *                       type: object
+ *                       properties:
+ *                         primer_lugar:
+ *                           type: integer
+ *                         segundo_lugar:
+ *                           type: integer
+ *                         tercer_lugar:
+ *                           type: integer
+ *                         otras_posiciones:
+ *                           type: integer
+ *                     resultados_por_competencia:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id_competencia:
+ *                             type: integer
+ *                           titulo_competencia:
+ *                             type: string
+ *                           total_resultados:
+ *                             type: integer
+ *                     top_participantes:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id_usuario:
+ *                             type: integer
+ *                           nombre_completo:
+ *                             type: string
+ *                           total_participaciones:
+ *                             type: integer
+ *                           mejores_posiciones:
+ *                             type: integer
+ *       403:
+ *         description: Sin permisos para ver estadísticas
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/estadisticas', authenticateToken, requireAnyPermission(['resultados:read', 'resultados:*']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Estadísticas generales
+    const statsGeneralesQuery = `
+      SELECT 
+        COUNT(*) as total_resultados,
+        COUNT(DISTINCT id_competencia) as total_competencias_con_resultados,
+        COUNT(DISTINCT id_usuario) as total_participantes_con_resultados
+      FROM resultados
+    `;
+    const statsGeneralesResult = await pool.query(statsGeneralesQuery);
+
+    // Distribución de posiciones
+    const distribucionQuery = `
+      SELECT 
+        COUNT(CASE WHEN posicion = 1 THEN 1 END) as primer_lugar,
+        COUNT(CASE WHEN posicion = 2 THEN 1 END) as segundo_lugar,
+        COUNT(CASE WHEN posicion = 3 THEN 1 END) as tercer_lugar,
+        COUNT(CASE WHEN posicion > 3 THEN 1 END) as otras_posiciones
+      FROM resultados
+    `;
+    const distribucionResult = await pool.query(distribucionQuery);
+
+    // Resultados por competencia
+    const resultadosPorCompetenciaQuery = `
+      SELECT 
+        r.id_competencia,
+        c.titulo as titulo_competencia,
+        COUNT(r.id_resultado) as total_resultados
+      FROM resultados r
+      INNER JOIN competencias c ON r.id_competencia = c.id_competencia
+      GROUP BY r.id_competencia, c.titulo
+      ORDER BY total_resultados DESC
+      LIMIT 10
+    `;
+    const resultadosPorCompetenciaResult = await pool.query(resultadosPorCompetenciaQuery);
+
+    // Top participantes (con más participaciones y mejores posiciones)
+    const topParticipantesQuery = `
+      SELECT 
+        r.id_usuario,
+        CONCAT(u.nombre, ' ', u.apellido) as nombre_completo,
+        COUNT(r.id_resultado) as total_participaciones,
+        COUNT(CASE WHEN r.posicion <= 3 THEN 1 END) as mejores_posiciones
+      FROM resultados r
+      INNER JOIN usuarios u ON r.id_usuario = u.id_usuario
+      GROUP BY r.id_usuario, u.nombre, u.apellido
+      ORDER BY mejores_posiciones DESC, total_participaciones DESC
+      LIMIT 10
+    `;
+    const topParticipantesResult = await pool.query(topParticipantesQuery);
+
+    const estadisticas: EstadisticasResultados = {
+      total_resultados: parseInt(statsGeneralesResult.rows[0].total_resultados),
+      total_competencias_con_resultados: parseInt(statsGeneralesResult.rows[0].total_competencias_con_resultados),
+      total_participantes_con_resultados: parseInt(statsGeneralesResult.rows[0].total_participantes_con_resultados),
+      distribucion_posiciones: {
+        primer_lugar: parseInt(distribucionResult.rows[0].primer_lugar),
+        segundo_lugar: parseInt(distribucionResult.rows[0].segundo_lugar),
+        tercer_lugar: parseInt(distribucionResult.rows[0].tercer_lugar),
+        otras_posiciones: parseInt(distribucionResult.rows[0].otras_posiciones)
+      },
+      resultados_por_competencia: resultadosPorCompetenciaResult.rows.map(row => ({
+        id_competencia: row.id_competencia,
+        titulo_competencia: row.titulo_competencia,
+        total_resultados: parseInt(row.total_resultados)
+      })),
+      top_participantes: topParticipantesResult.rows.map(row => ({
+        id_usuario: row.id_usuario,
+        nombre_completo: row.nombre_completo,
+        total_participaciones: parseInt(row.total_participaciones),
+        mejores_posiciones: parseInt(row.mejores_posiciones)
+      }))
+    };
+
+    const response: EstadisticasResultadosResponse = {
+      success: true,
+      message: 'Estadísticas obtenidas exitosamente',
+      data: estadisticas
+    };
+
+    res.json(response);
+
+  } catch (error) {
+    console.error('Error al obtener estadísticas de resultados:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'

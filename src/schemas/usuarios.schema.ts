@@ -67,6 +67,30 @@ export const actualizarUsuarioSchema = z.object({
     .optional()
 });
 
+// Esquema específico para actualización de perfil propio (excluye campos sensibles)
+export const actualizarPerfilSchema = z.object({
+  nombre: z.string()
+    .min(1, 'El nombre es requerido')
+    .max(100, 'El nombre no puede exceder 100 caracteres')
+    .trim()
+    .optional(),
+  apellido: z.string()
+    .min(1, 'El apellido es requerido')
+    .max(100, 'El apellido no puede exceder 100 caracteres')
+    .trim()
+    .optional(),
+  telefono: z.string()
+    .max(20, 'El teléfono no puede exceder 20 caracteres')
+    .optional(),
+  colegio: z.string()
+    .max(150, 'El colegio no puede exceder 150 caracteres')
+    .optional(),
+  foto_url: z.string()
+    .url('La URL de la foto debe ser válida')
+    .max(255, 'La URL de la foto no puede exceder 255 caracteres')
+    .optional()
+});
+
 // Esquema para filtros de usuarios
 export const filtrosUsuariosSchema = z.object({
   nombre: z.string().optional(),
@@ -99,6 +123,7 @@ export const loginUsuarioSchema = z.object({
 // Tipos inferidos
 export type CrearUsuarioRequest = z.infer<typeof crearUsuarioSchema>;
 export type ActualizarUsuarioRequest = z.infer<typeof actualizarUsuarioSchema>;
+export type ActualizarPerfilRequest = z.infer<typeof actualizarPerfilSchema>;
 export type FiltrosUsuarios = z.infer<typeof filtrosUsuariosSchema>;
 export type IdUsuarioParams = z.infer<typeof idUsuarioSchema>;
 export type LoginUsuarioRequest = z.infer<typeof loginUsuarioSchema>;
