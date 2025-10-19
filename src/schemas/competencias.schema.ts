@@ -25,6 +25,15 @@ export const crearCompetenciaSchema = z.object({
   id_staff_responsable: z.number()
     .int('El ID del staff responsable debe ser un número entero')
     .positive('El ID del staff responsable debe ser mayor a 0')
+    .optional(),
+  anio_evento: z.number()
+    .int('El año del evento debe ser un número entero')
+    .min(2020, 'El año del evento debe ser mayor a 2020')
+    .max(2030, 'El año del evento no puede ser mayor a 2030')
+    .optional(),
+  imagen_url: z.string()
+    .url('La URL de la imagen debe ser válida')
+    .max(255, 'La URL de la imagen no puede exceder 255 caracteres')
     .optional()
 });
 
@@ -57,6 +66,15 @@ export const actualizarCompetenciaSchema = z.object({
   id_staff_responsable: z.number()
     .int('El ID del staff responsable debe ser un número entero')
     .positive('El ID del staff responsable debe ser mayor a 0')
+    .optional(),
+  anio_evento: z.number()
+    .int('El año del evento debe ser un número entero')
+    .min(2020, 'El año del evento debe ser mayor a 2020')
+    .max(2030, 'El año del evento no puede ser mayor a 2030')
+    .optional(),
+  imagen_url: z.string()
+    .url('La URL de la imagen debe ser válida')
+    .max(255, 'La URL de la imagen no puede exceder 255 caracteres')
     .optional()
 });
 
@@ -82,6 +100,11 @@ export const filtrosCompetenciasSchema = z.object({
   cupo_maximo: z.coerce.number()
     .int('El cupo máximo debe ser un número entero')
     .min(1, 'El cupo máximo debe ser mayor a 0')
+    .optional(),
+  anio_evento: z.coerce.number()
+    .int('El año del evento debe ser un número entero')
+    .min(2020, 'El año del evento debe ser mayor a 2020')
+    .max(2030, 'El año del evento no puede ser mayor a 2030')
     .optional(),
   pagina: z.coerce.number()
     .int('La página debe ser un número entero')

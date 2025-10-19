@@ -5,7 +5,8 @@ export const crearAsistenciaSchema = z.object({
   id_taller: z.number().int().positive('El ID del taller debe ser un número positivo').optional(),
   id_competencia: z.number().int().positive('El ID de la competencia debe ser un número positivo').optional(),
   id_foro: z.number().int().positive('El ID del foro debe ser un número positivo').optional(),
-  estado: z.enum(['P', 'A', 'D']).default('D')
+  estado: z.enum(['P', 'A', 'D']).default('D'),
+  token_qr: z.string().max(255, 'El token QR no puede exceder 255 caracteres').optional()
 }).refine(
   (data) => {
     const hasEvent = [data.id_taller, data.id_competencia, data.id_foro].filter(Boolean).length;
@@ -19,7 +20,8 @@ export const crearAsistenciaSchema = z.object({
 
 export const actualizarAsistenciaSchema = z.object({
   estado: z.enum(['P', 'A', 'D']).optional(),
-  fecha: z.string().datetime('La fecha debe estar en formato ISO 8601').optional()
+  fecha: z.string().datetime('La fecha debe estar en formato ISO 8601').optional(),
+  token_qr: z.string().max(255, 'El token QR no puede exceder 255 caracteres').optional()
 });
 
 export const filtrosAsistenciaSchema = z.object({

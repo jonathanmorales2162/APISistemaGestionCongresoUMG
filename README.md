@@ -158,8 +158,7 @@ src/
 │   └── queries/        # Consultas SQL
 ├── middleware/         # Middlewares
 │   ├── auth.middleware.ts
-│   ├── authorization.middleware.ts
-│   └── errorHandler.ts
+│   └── authorization.middleware.ts
 ├── routes/             # Rutas de la API
 │   ├── usuarios.routes.ts
 │   ├── roles.routes.ts
@@ -178,6 +177,7 @@ src/
 - `POST /api/usuarios/register` - Registro de usuario
 - `POST /api/usuarios/login` - Inicio de sesión
 - `POST /api/usuarios/refresh` - Renovar token
+- `GET /api/usuarios/validate` - Validar token y estado de sesión
 
 ### Talleres
 - `GET /api/talleres` - Listar talleres

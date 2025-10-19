@@ -484,18 +484,13 @@ export const swaggerOptions = {
 
 export const swaggerSpec = swaggerJSDoc(swaggerOptions);
 
-// CORREGIDO: Función optimizada para configurar Swagger en Vercel serverless
 export const setupSwagger = (app: Express): void => {
-  // Generar la especificación de Swagger
   const specs = swaggerJSDoc(swaggerOptions);
   
-  // Ruta para servir la especificación JSON
   app.get('/api-docs.json', (_req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(specs);
   });
-  
-  // Configuración optimizada para Vercel - sin dependencias externas
   const swaggerUiOptions = {
     customCss: `
       .swagger-ui .topbar { display: none }
@@ -524,7 +519,6 @@ export const setupSwagger = (app: Express): void => {
   app.use('/api-docs', swaggerUi.serve);
   app.get('/api-docs', swaggerUi.setup(specs, swaggerUiOptions));
   
-  // Ruta raíz - Redirección a Swagger
   app.get('/', (_req, res) => {
     res.redirect('/api-docs');
   });

@@ -6,12 +6,21 @@ export interface Diploma {
   id_competencia?: string | null;
   fecha_generacion: Date;
   archivo_pdf?: string | null;
+  enviado_correo?: boolean;
+  fecha_envio?: Date | null;
 }
 
 export interface CrearDiplomaRequest {
   id_usuario: string;
   id_taller?: string;
   id_competencia?: string;
+  enviado_correo?: boolean;
+  fecha_envio?: string;
+}
+
+export interface ActualizarDiplomaRequest {
+  enviado_correo?: boolean;
+  fecha_envio?: string;
 }
 
 export interface DiplomaConDetalles extends Diploma {
@@ -29,6 +38,7 @@ export interface FiltrosDiplomas {
   id_competencia?: string;
   fecha_desde?: string;
   fecha_hasta?: string;
+  enviado_correo?: boolean;
   limite?: number;
   pagina?: number;
 }

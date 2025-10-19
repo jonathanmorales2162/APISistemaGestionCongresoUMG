@@ -1,5 +1,5 @@
-import { Router } from 'express'; // valor
-import type { Request, Response, NextFunction } from 'express'; // tipos
+import { Router } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -24,13 +24,11 @@ import { requirePermission, requireAnyPermission } from '../middleware/authoriza
 
 const router = Router();
 
-// Helper function to parse refresh token expiration time
 function parseRefreshTokenExpiration(expiresIn: string): Date {
   const expiration = new Date();
   const match = expiresIn.match(/^(\d+)([dhm])$/);
   
   if (!match) {
-    // Default to 7 days if format is invalid
     expiration.setDate(expiration.getDate() + 7);
     return expiration;
   }
@@ -362,7 +360,8 @@ router.get('/perfil', authenticateToken, requireAnyPermission(['usuarios:read_se
  * @swagger
  * /usuarios/validate:
  *   get:
- *     summary: Validar token de acceso actual
+ *     summary: Validar token de acceso actual y estado de sesión
+ *     description: Valida el token JWT actual y verifica el estado completo de la sesión del usuario, incluyendo refresh tokens activos
  *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
@@ -412,8 +411,31 @@ router.get('/perfil', authenticateToken, requireAnyPermission(['usuarios:read_se
  *                         nombre:
  *                           type: string
  *                           example: "Participante"
+ *                 session:
+ *                   type: object
+ *                   description: Estado de la sesión del usuario
+ *                   properties:
+ *                     hasValidRefreshToken:
+ *                       type: boolean
+ *                       description: Indica si el usuario tiene refresh tokens válidos activos
+ *                       example: true
+ *                     message:
+ *                       type: string
+ *                       description: Mensaje descriptivo del estado de la sesión
+ *                       example: "Sesión completamente válida"
  *       401:
- *         description: Token inválido o expirado
+ *         description: Token inválido, expirado, o usuario inactivo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 valid:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Token inválido"
  *       500:
  *         description: Error interno del servidor
  */
@@ -455,6 +477,18 @@ router.get('/validate', authenticateToken, async (req: Request, res: Response, n
 
     const user = userResult.rows[0];
 
+    // Verificar si el usuario tiene al menos un refresh token válido y no revocado
+    const refreshTokenResult = await pool.query(
+      `SELECT COUNT(*) as token_count
+       FROM refresh_tokens 
+       WHERE id_usuario = $1 
+       AND revocado = false 
+       AND expiracion > NOW()`,
+      [userId]
+    );
+
+    const hasValidRefreshToken = parseInt(refreshTokenResult.rows[0].token_count) > 0;
+
     // Preparar datos del usuario
     const usuario = {
       id_usuario: user.id_usuario,
@@ -472,7 +506,13 @@ router.get('/validate', authenticateToken, async (req: Request, res: Response, n
 
     return res.json({
       valid: true,
-      usuario
+      usuario,
+      session: {
+        hasValidRefreshToken,
+        message: hasValidRefreshToken 
+          ? 'Sesión completamente válida' 
+          : 'Token de acceso válido, pero sin refresh token activo'
+      }
     });
   } catch (err) {
     next(err);

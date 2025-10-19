@@ -23,6 +23,8 @@ export interface Foro {
   categoria?: Categoria;
   estado: EstadoForo;
   id_usuario: number;
+  anio_evento?: number;
+  imagen_url?: string;
 }
 
 // Interfaz para crear un nuevo foro
@@ -31,6 +33,8 @@ export interface CrearForoRequest {
   descripcion: string;
   id_categoria: number;
   estado?: EstadoForo;
+  anio_evento?: number;
+  imagen_url?: string;
 }
 
 // Interfaz para actualizar un foro
@@ -39,6 +43,8 @@ export interface ActualizarForoRequest {
   descripcion?: string;
   id_categoria?: number;
   estado?: EstadoForo;
+  anio_evento?: number;
+  imagen_url?: string;
 }
 
 // Interfaz para filtros de foros
@@ -46,6 +52,7 @@ export interface FiltrosForos {
   estado?: EstadoForo;
   categoria?: string;
   fecha_creacion?: string; // Fecha de creación (filtro)
+  anio_evento?: number;
   pagina?: number;
   limite?: number;
 }

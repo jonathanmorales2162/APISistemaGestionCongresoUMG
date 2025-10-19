@@ -6,6 +6,9 @@ export interface Resultado {
   posicion: number;
   descripcion?: string;
   creado_en: Date;
+  nombre_proyecto?: string;
+  foto_url?: string;
+  anio_evento?: number;
 }
 
 // Tipo para crear un resultado (sin campos auto-generados)
@@ -14,6 +17,9 @@ export interface CreateResultado {
   id_usuario: number;
   posicion: number;
   descripcion?: string;
+  nombre_proyecto?: string;
+  foto_url?: string;
+  anio_evento?: number;
 }
 
 // Tipo para actualizar un resultado (todos los campos opcionales)
@@ -22,6 +28,9 @@ export interface UpdateResultado {
   id_usuario?: number;
   posicion?: number;
   descripcion?: string;
+  nombre_proyecto?: string;
+  foto_url?: string;
+  anio_evento?: number;
 }
 
 // Tipo extendido con información de usuario y competencia
@@ -49,11 +58,12 @@ export interface ResultadoDetallesResponse {
   error?: string;
 }
 
-// Tipo para filtros de consulta
+// Tipo para filtros de búsqueda
 export interface ResultadoFilters {
   id_competencia?: number;
   id_usuario?: number;
   posicion?: number;
+  anio_evento?: number;
   limit?: number;
   offset?: number;
 }

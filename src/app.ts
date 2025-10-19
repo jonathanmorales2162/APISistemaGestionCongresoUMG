@@ -12,21 +12,20 @@ import forosRouter from './routes/foros.routes.js';
 import talleresRouter from './routes/talleres.routes.js';
 import competenciasRouter from './routes/competencias.routes.js';
 import categoriasRouter from './routes/categorias.routes.js';
+import faqRouter from './routes/faq.routes.js';
 import inscripcionesRouter from './routes/inscripciones.routes.js';
 import asistenciaRouter from './routes/asistencia.routes.js';
 import diplomasRouter from './routes/diplomas.routes.js';
 import resultadosRouter from './routes/resultados.routes.js';
 import viewsRouter from './routes/views.routes.js';
-import { databaseErrorHandler, generalErrorHandler } from './middleware/errorHandler.js';
+
 
 const app = express();
 
-// Configurar trust proxy para Vercel
 if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV) {
   app.set('trust proxy', 1);
 }
 
-// Seguridad base: reemplazo manual de Helmet
 app.disable('x-powered-by');
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -40,7 +39,6 @@ app.use((_req, res, next) => {
 
 app.use(hpp());
 
-// CORS configurado para desarrollo y producción
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const allowedOrigins = [
   'http://localhost:5173',
@@ -50,7 +48,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir requests sin origin (como Postman, aplicaciones móviles, etc.)
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.includes(origin)) {
@@ -64,11 +61,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
-// Rate limit genérico
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  // Deshabilitar validaciones problemáticas en Vercel
   validate: {
     xForwardedForHeader: false,
     forwardedHeader: false,
@@ -76,17 +71,13 @@ app.use(rateLimit({
   }
 }));
 
-// Parsers
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
-// CORREGIDO: Configuración de Swagger optimizada para Vercel serverless
 setupSwagger(app);
 
-// Healthcheck
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-// Rutas - CORREGIDO: Agregado prefijo /api para compatibilidad con Vercel
 app.use('/api/roles', rolesRouter);
 app.use('/api/usuarios', usuariosRouter);
 app.use('/api/participantes', participantesRouter);
@@ -94,17 +85,16 @@ app.use('/api/foros', forosRouter);
 app.use('/api/talleres', talleresRouter);
 app.use('/api/competencias', competenciasRouter);
 app.use('/api/categorias', categoriasRouter);
+app.use('/api/faq', faqRouter);
 app.use('/api/inscripciones', inscripcionesRouter);
 app.use('/api/asistencia', asistenciaRouter);
 app.use('/api/diplomas', diplomasRouter);
 app.use('/api/resultados', resultadosRouter);
 app.use('/api/views', viewsRouter);
 
-// Manejador de errores
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("Error en middleware:", err);
   
-  // Error de validación Zod
   if (err instanceof ZodError) {
     return res.status(400).json({
       success: false,
@@ -116,11 +106,9 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
     });
   }
 
-  // Error de PostgreSQL
   if (err && typeof err === 'object' && 'code' in err) {
     const pgError = err as any;
     
-    // Violación de restricción única
     if (pgError.code === '23505') {
       return res.status(400).json({
         success: false,
@@ -128,7 +116,6 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
       });
     }
     
-    // Violación de clave foránea
     if (pgError.code === '23503') {
       return res.status(400).json({
         success: false,
@@ -137,7 +124,6 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
     }
   }
 
-  // Error genérico
   res.status(500).json({ 
     success: false,
     message: "Error interno del servidor" 

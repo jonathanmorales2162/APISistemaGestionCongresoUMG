@@ -8,6 +8,8 @@ export interface Competencia {
   id_categoria?: number;
   id_staff_responsable?: number;
   creado_en: Date;
+  anio_evento?: number;
+  imagen_url?: string;
 }
 
 // Interfaz para el objeto categoría
@@ -27,6 +29,8 @@ export interface CompetenciaConCategoria {
   categoria?: Categoria;
   id_staff_responsable?: number;
   creado_en: Date;
+  anio_evento?: number;
+  imagen_url?: string;
 }
 
 // Request para crear competencia
@@ -37,6 +41,8 @@ export interface CrearCompetenciaRequest {
   horario: string; // ISO string para fecha/hora
   id_categoria?: number;
   id_staff_responsable?: number;
+  anio_evento?: number;
+  imagen_url?: string;
 }
 
 // Request para actualizar competencia
@@ -47,6 +53,8 @@ export interface ActualizarCompetenciaRequest {
   horario?: string; // ISO string para fecha/hora
   id_categoria?: number;
   id_staff_responsable?: number;
+  anio_evento?: number;
+  imagen_url?: string;
 }
 
 // Respuesta estándar de la API
@@ -65,6 +73,7 @@ export interface FiltrosCompetencias {
   fecha_hasta?: string;
   cupo_minimo?: number;
   cupo_maximo?: number;
+  anio_evento?: number;
   pagina: number;
   limite: number;
 }

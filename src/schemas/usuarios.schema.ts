@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Esquema para crear un usuario
 export const crearUsuarioSchema = z.object({
   nombre: z.string()
     .min(1, 'El nombre es requerido')
@@ -29,10 +28,13 @@ tipo: z.string()
     .max(255, 'La contraseña no puede exceder 255 caracteres'),
   id_rol: z.number()
     .int('El ID del rol debe ser un número entero')
-    .positive('El ID del rol debe ser mayor a 0')
+    .positive('El ID del rol debe ser mayor a 0'),
+  foto_url: z.string()
+    .url('La URL de la foto debe ser válida')
+    .max(255, 'La URL de la foto no puede exceder 255 caracteres')
+    .optional()
 });
 
-// Esquema para actualizar un usuario
 export const actualizarUsuarioSchema = z.object({
   nombre: z.string()
     .min(1, 'El nombre es requerido')
@@ -58,6 +60,10 @@ export const actualizarUsuarioSchema = z.object({
   id_rol: z.number()
     .int('El ID del rol debe ser un número entero')
     .positive('El ID del rol debe ser mayor a 0')
+    .optional(),
+  foto_url: z.string()
+    .url('La URL de la foto debe ser válida')
+    .max(255, 'La URL de la foto no puede exceder 255 caracteres')
     .optional()
 });
 

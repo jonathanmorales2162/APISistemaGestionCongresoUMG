@@ -26,7 +26,20 @@ export const crearForoSchema = z.object({
     .int('El ID de categoría debe ser un número entero')
     .positive('El ID de categoría debe ser mayor a 0'),
 
-  estado: estadoForoEnum.optional().default('A')
+  estado: estadoForoEnum.optional().default('A'),
+
+  anio_evento: z
+    .number()
+    .int('El año del evento debe ser un número entero')
+    .min(2020, 'El año del evento debe ser mayor a 2020')
+    .max(2030, 'El año del evento no puede ser mayor a 2030')
+    .optional(),
+
+  imagen_url: z
+    .string()
+    .url('La URL de la imagen debe ser válida')
+    .max(255, 'La URL de la imagen no puede exceder 255 caracteres')
+    .optional()
 });
 
 // Schema para actualizar un foro
@@ -51,7 +64,20 @@ export const actualizarForoSchema = z.object({
     .positive('El ID de categoría debe ser mayor a 0')
     .optional(),
 
-  estado: estadoForoEnum.optional()
+  estado: estadoForoEnum.optional(),
+
+  anio_evento: z
+    .number()
+    .int('El año del evento debe ser un número entero')
+    .min(2020, 'El año del evento debe ser mayor a 2020')
+    .max(2030, 'El año del evento no puede ser mayor a 2030')
+    .optional(),
+
+  imagen_url: z
+    .string()
+    .url('La URL de la imagen debe ser válida')
+    .max(255, 'La URL de la imagen no puede exceder 255 caracteres')
+    .optional()
 });
 
 // Schema para filtros de foros
@@ -73,6 +99,13 @@ export const filtrosForosSchema = z.object({
       return !isNaN(parsedDate.getTime());
     }, 'La fecha de creación debe ser una fecha válida')
     .optional(),
+
+  anio_evento: z
+    .string()
+    .optional()
+    .refine((val) => !val || /^\d+$/.test(val), 'El año del evento debe ser un número entero')
+    .transform((val) => val ? parseInt(val, 10) : undefined)
+    .refine((val) => !val || (val >= 2020 && val <= 2030), 'El año del evento debe estar entre 2020 y 2030'),
 
   pagina: z
     .string()

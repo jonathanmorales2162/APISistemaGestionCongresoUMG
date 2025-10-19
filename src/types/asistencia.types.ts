@@ -7,6 +7,7 @@ export interface Asistencia {
   id_foro?: number | null;
   fecha: Date;
   estado: 'P' | 'A' | 'D'; // P=Presente, A=Ausente, D=Default
+  token_qr?: string | null;
 }
 
 export interface AsistenciaCompleta extends Asistencia {
@@ -46,11 +47,13 @@ export interface CrearAsistenciaRequest {
   id_competencia?: number;
   id_foro?: number;
   estado?: 'P' | 'A' | 'D'; // P=Presente, A=Ausente, D=Default
+  token_qr?: string;
 }
 
 export interface ActualizarAsistenciaRequest {
   estado?: 'P' | 'A' | 'D'; // P=Presente, A=Ausente, D=Default
   fecha?: Date;
+  token_qr?: string;
 }
 
 export interface FiltrosAsistencia {

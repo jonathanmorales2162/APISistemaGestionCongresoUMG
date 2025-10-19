@@ -1,6 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
 
-// Definición de permisos por rol según las reglas del proyecto
 export const ROLE_PERMISSIONS = {
   Admin: [
     "usuarios:create", "usuarios:read", "usuarios:update", "usuarios:delete",
@@ -44,17 +43,9 @@ export const ROLE_PERMISSIONS = {
   ]
 };
 
-/**
- * Middleware de autorización que verifica permisos basados en roles
- * Implementa las reglas 7 y 8 del proyecto
- * 
- * @param requiredPermission - Permiso requerido en formato "modulo:accion"
- * @returns Middleware function
- */
 export const requirePermission = (requiredPermission: string) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
-      // Verificar que el usuario esté autenticado (regla 8)
       if (!req.user) {
         res.status(401).json({
           success: false,
@@ -66,7 +57,6 @@ export const requirePermission = (requiredPermission: string) => {
 
       const { rol, id: userId } = req.user;
       
-      // Verificar que el rol del usuario esté definido
       if (!rol || !ROLE_PERMISSIONS[rol as keyof typeof ROLE_PERMISSIONS]) {
         res.status(403).json({
           success: false,
@@ -78,7 +68,6 @@ export const requirePermission = (requiredPermission: string) => {
 
       const userPermissions = ROLE_PERMISSIONS[rol as keyof typeof ROLE_PERMISSIONS];
       
-      // Verificar permisos específicos (regla 7)
       const hasPermission = checkPermission(userPermissions, requiredPermission, userId, req);
       
       if (!hasPermission) {
