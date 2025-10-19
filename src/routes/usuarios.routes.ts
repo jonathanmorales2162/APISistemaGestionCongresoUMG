@@ -1121,7 +1121,7 @@ router.put('/perfil', authenticateToken, requireAnyPermission(['usuarios:update_
       UPDATE usuarios 
       SET ${setClause}
       WHERE id_usuario = $${fields.length + 1}
-      RETURNING id_usuario, nombre, apellido, correo, telefono, colegio, tipo, id_rol, creado_en
+      RETURNING id_usuario, nombre, apellido, correo, telefono, colegio, tipo, id_rol, foto_url, creado_en
     `;
 
     const result = await pool.query(query, [...values, req.user.id]);
