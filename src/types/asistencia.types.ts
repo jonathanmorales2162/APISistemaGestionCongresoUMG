@@ -16,6 +16,7 @@ export interface AsistenciaCompleta extends Asistencia {
     nombre: string;
     apellido: string;
     correo: string;
+    foto_url?: string;
   };
   tipo_evento: {
     id_tipo: number;
@@ -26,18 +27,23 @@ export interface AsistenciaCompleta extends Asistencia {
     titulo: string;
     descripcion: string;
     horario: string;
+    imagen_url?: string;
+    anio_evento?: number;
   } | null;
   competencia?: {
     id_competencia: number;
     titulo: string;
     descripcion: string;
     horario: string;
+    imagen_url?: string;
+    anio_evento?: number;
   } | null;
   foro?: {
     id_foro: number;
     titulo: string;
     descripcion: string;
     fecha_creacion: string;
+    imagen_url?: string;
   } | null;
 }
 

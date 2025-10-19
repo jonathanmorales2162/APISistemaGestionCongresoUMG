@@ -39,7 +39,8 @@ const mapRowToInscripcionCompleta = (row: any): InscripcionCompleta => {
       correo: row.usuario_correo,
       telefono: row.usuario_telefono,
       colegio: row.usuario_colegio,
-      tipo: row.usuario_tipo
+      tipo: row.usuario_tipo,
+      foto_url: row.usuario_foto_url
     },
     tipo_evento: {
       id_tipo: row.tipo_id,
@@ -50,21 +51,26 @@ const mapRowToInscripcionCompleta = (row: any): InscripcionCompleta => {
       titulo: row.taller_titulo,
       descripcion: row.taller_descripcion,
       cupo: row.taller_cupo,
-      horario: row.taller_horario
+      horario: row.taller_horario,
+      imagen_url: row.taller_imagen_url,
+      anio_evento: row.taller_anio_evento
     } : undefined,
     competencia: row.competencia_id ? {
       id_competencia: row.competencia_id,
       titulo: row.competencia_titulo,
       descripcion: row.competencia_descripcion,
       cupo: row.competencia_cupo,
-      horario: row.competencia_horario
+      horario: row.competencia_horario,
+      imagen_url: row.competencia_imagen_url,
+      anio_evento: row.competencia_anio_evento
     } : undefined,
     foro: row.foro_id ? {
       id_foro: row.foro_id,
       titulo: row.foro_titulo,
       descripcion: row.foro_descripcion,
       fecha_creacion: row.foro_fecha_creacion,
-      estado: row.foro_estado
+      estado: row.foro_estado,
+      imagen_url: row.foro_imagen_url
     } : undefined
   };
 };
@@ -391,14 +397,14 @@ router.get('/', authenticateToken, requireAnyPermission(['inscripciones:read', '
       SELECT 
         i.*,
         u.id_usuario as usuario_id, u.nombre as usuario_nombre, u.apellido as usuario_apellido,
-        u.correo as usuario_correo, u.telefono as usuario_telefono, u.colegio as usuario_colegio, u.tipo as usuario_tipo,
+        u.correo as usuario_correo, u.telefono as usuario_telefono, u.colegio as usuario_colegio, u.tipo as usuario_tipo, u.foto_url as usuario_foto_url,
         te.id_tipo as tipo_id, te.nombre as tipo_nombre,
         t.id_taller as taller_id, t.titulo as taller_titulo, t.descripcion as taller_descripcion, 
-        t.cupo as taller_cupo, t.horario as taller_horario,
+        t.cupo as taller_cupo, t.horario as taller_horario, t.imagen_url as taller_imagen_url, t.anio_evento as taller_anio_evento,
         c.id_competencia as competencia_id, c.titulo as competencia_titulo, c.descripcion as competencia_descripcion,
-        c.cupo as competencia_cupo, c.horario as competencia_horario,
+        c.cupo as competencia_cupo, c.horario as competencia_horario, c.imagen_url as competencia_imagen_url, c.anio_evento as competencia_anio_evento,
         f.id_foro as foro_id, f.titulo as foro_titulo, f.descripcion as foro_descripcion,
-        f.fecha_creacion as foro_fecha_creacion, f.estado as foro_estado
+        f.fecha_creacion as foro_fecha_creacion, f.estado as foro_estado, f.imagen_url as foro_imagen_url
       FROM inscripciones i
       INNER JOIN usuarios u ON i.id_usuario = u.id_usuario
       INNER JOIN tipos_evento te ON i.id_tipo = te.id_tipo
@@ -518,14 +524,14 @@ router.get('/:id', authenticateToken, requireAnyPermission(['inscripciones:read'
       SELECT 
         i.*,
         u.id_usuario as usuario_id, u.nombre as usuario_nombre, u.apellido as usuario_apellido,
-        u.correo as usuario_correo, u.telefono as usuario_telefono, u.colegio as usuario_colegio, u.tipo as usuario_tipo,
+        u.correo as usuario_correo, u.telefono as usuario_telefono, u.colegio as usuario_colegio, u.tipo as usuario_tipo, u.foto_url as usuario_foto_url,
         te.id_tipo as tipo_id, te.nombre as tipo_nombre,
         t.id_taller as taller_id, t.titulo as taller_titulo, t.descripcion as taller_descripcion, 
-        t.cupo as taller_cupo, t.horario as taller_horario,
+        t.cupo as taller_cupo, t.horario as taller_horario, t.imagen_url as taller_imagen_url, t.anio_evento as taller_anio_evento,
         c.id_competencia as competencia_id, c.titulo as competencia_titulo, c.descripcion as competencia_descripcion,
-        c.cupo as competencia_cupo, c.horario as competencia_horario,
+        c.cupo as competencia_cupo, c.horario as competencia_horario, c.imagen_url as competencia_imagen_url, c.anio_evento as competencia_anio_evento,
         f.id_foro as foro_id, f.titulo as foro_titulo, f.descripcion as foro_descripcion,
-        f.fecha_creacion as foro_fecha_creacion, f.estado as foro_estado
+        f.fecha_creacion as foro_fecha_creacion, f.estado as foro_estado, f.imagen_url as foro_imagen_url
       FROM inscripciones i
       INNER JOIN usuarios u ON i.id_usuario = u.id_usuario
       INNER JOIN tipos_evento te ON i.id_tipo = te.id_tipo

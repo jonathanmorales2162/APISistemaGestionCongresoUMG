@@ -38,6 +38,7 @@ export interface ResultadoConDetalles extends Resultado {
   usuario_nombre: string;
   usuario_apellido: string;
   usuario_correo: string;
+  usuario_foto_url?: string;
   competencia_titulo: string;
   competencia_descripcion: string;
 }

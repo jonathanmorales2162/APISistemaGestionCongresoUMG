@@ -24,6 +24,7 @@ export interface UsuarioBasico {
   telefono?: string;
   colegio?: string;
   tipo: 'I' | 'E'; // I = interno, E = externo
+  foto_url?: string;
 }
 
 // Interfaz para información básica del taller
@@ -33,6 +34,8 @@ export interface TallerBasico {
   descripcion: string;
   cupo: number;
   horario: Date;
+  imagen_url?: string;
+  anio_evento?: number;
 }
 
 // Interfaz para información básica de la competencia
@@ -42,6 +45,8 @@ export interface CompetenciaBasica {
   descripcion: string;
   cupo: number;
   horario: Date;
+  imagen_url?: string;
+  anio_evento?: number;
 }
 
 // Interfaz para información básica del foro
@@ -51,6 +56,7 @@ export interface ForoBasico {
   descripcion: string;
   fecha_creacion: Date;
   estado: 'A' | 'I'; // A = Activo, I = Inactivo
+  imagen_url?: string;
 }
 
 // Inscripción con información completa (para JOIN)

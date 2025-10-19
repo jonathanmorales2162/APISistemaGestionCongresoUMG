@@ -152,6 +152,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         u.tipo,
         r.id_rol,
         r.nombre as rol_nombre,
+        u.foto_url,
         u.creado_en
       FROM usuarios u
       LEFT JOIN roles r ON u.id_rol = r.id_rol
@@ -305,6 +306,7 @@ router.get('/perfil', authenticateToken, requireAnyPermission(['usuarios:read_se
         u.colegio,
         u.tipo,
         u.id_rol,
+        u.foto_url,
         u.creado_en,
         r.nombre as rol_nombre
       FROM usuarios u
@@ -535,6 +537,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
         u.tipo,
         r.id_rol,
         r.nombre as rol_nombre,
+        u.foto_url,
         u.creado_en
       FROM usuarios u
       LEFT JOIN roles r ON u.id_rol = r.id_rol
@@ -564,6 +567,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
         id_rol: row.id_rol,
         nombre: row.rol_nombre || 'Sin rol'
       },
+      foto_url: row.foto_url,
       creado_en: row.creado_en
     };
 

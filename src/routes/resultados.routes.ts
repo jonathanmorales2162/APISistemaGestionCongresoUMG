@@ -231,6 +231,7 @@ router.get('/', authenticateToken, requireAnyPermission(['resultados:read', 'res
         u.nombre as usuario_nombre,
         u.apellido as usuario_apellido,
         u.correo as usuario_correo,
+        u.foto_url as usuario_foto_url,
         c.titulo as competencia_titulo,
         c.descripcion as competencia_descripcion
       FROM resultados r
@@ -255,6 +256,7 @@ router.get('/', authenticateToken, requireAnyPermission(['resultados:read', 'res
       usuario_nombre: row.usuario_nombre,
       usuario_apellido: row.usuario_apellido,
       usuario_correo: row.usuario_correo,
+      usuario_foto_url: row.usuario_foto_url,
       competencia_titulo: row.competencia_titulo,
       competencia_descripcion: row.competencia_descripcion
     }));
@@ -339,6 +341,7 @@ router.get('/:id', authenticateToken, requireAnyPermission(['resultados:read', '
         u.nombre as usuario_nombre,
         u.apellido as usuario_apellido,
         u.correo as usuario_correo,
+        u.foto_url as usuario_foto_url,
         c.titulo as competencia_titulo,
         c.descripcion as competencia_descripcion
       FROM resultados r
@@ -368,6 +371,7 @@ router.get('/:id', authenticateToken, requireAnyPermission(['resultados:read', '
       usuario_nombre: row.usuario_nombre,
       usuario_apellido: row.usuario_apellido,
       usuario_correo: row.usuario_correo,
+      usuario_foto_url: row.usuario_foto_url,
       competencia_titulo: row.competencia_titulo,
       competencia_descripcion: row.competencia_descripcion
     };

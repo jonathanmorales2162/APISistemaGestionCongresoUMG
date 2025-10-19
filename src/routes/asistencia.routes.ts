@@ -31,7 +31,8 @@ function mapRowToAsistenciaCompleta(row: any): AsistenciaCompleta {
       id_usuario: row.usuario_id,
       nombre: row.usuario_nombre,
       apellido: row.usuario_apellido,
-      correo: row.usuario_correo
+      correo: row.usuario_correo,
+      foto_url: row.foto_url
     },
     tipo_evento: {
       id_tipo: row.tipo_id,
@@ -41,19 +42,24 @@ function mapRowToAsistenciaCompleta(row: any): AsistenciaCompleta {
       id_taller: row.taller_id,
       titulo: row.taller_titulo,
       descripcion: row.taller_descripcion,
-      horario: row.taller_horario
+      horario: row.taller_horario,
+      imagen_url: row.taller_imagen_url,
+      anio_evento: row.taller_anio_evento
     } : null,
     competencia: row.competencia_id ? {
       id_competencia: row.competencia_id,
       titulo: row.competencia_titulo,
       descripcion: row.competencia_descripcion,
-      horario: row.competencia_horario
+      horario: row.competencia_horario,
+      imagen_url: row.competencia_imagen_url,
+      anio_evento: row.competencia_anio_evento
     } : null,
     foro: row.foro_id ? {
       id_foro: row.foro_id,
       titulo: row.foro_titulo,
       descripcion: row.foro_descripcion,
-      fecha_creacion: row.foro_fecha_creacion
+      fecha_creacion: row.foro_fecha_creacion,
+      imagen_url: row.foro_imagen_url
     } : null
   };
 }
@@ -473,11 +479,11 @@ router.get('/', authenticateToken, requireAnyPermission(['asistencia:read', 'asi
     const query = `
       SELECT 
         a.id_asistencia, a.id_usuario, a.id_tipo, a.id_taller, a.id_competencia, a.id_foro, a.fecha, a.estado,
-        u.id_usuario as usuario_id, u.nombre as usuario_nombre, u.apellido as usuario_apellido, u.correo as usuario_correo,
+        u.id_usuario as usuario_id, u.nombre as usuario_nombre, u.apellido as usuario_apellido, u.correo as usuario_correo, u.foto_url,
         te.id_tipo as tipo_id, te.nombre as tipo_nombre,
-        t.id_taller as taller_id, t.titulo as taller_titulo, t.descripcion as taller_descripcion, t.horario as taller_horario,
-        c.id_competencia as competencia_id, c.titulo as competencia_titulo, c.descripcion as competencia_descripcion, c.horario as competencia_horario,
-        f.id_foro as foro_id, f.titulo as foro_titulo, f.descripcion as foro_descripcion, f.fecha_creacion as foro_fecha_creacion
+        t.id_taller as taller_id, t.titulo as taller_titulo, t.descripcion as taller_descripcion, t.horario as taller_horario, t.imagen_url as taller_imagen_url, t.anio_evento as taller_anio_evento,
+        c.id_competencia as competencia_id, c.titulo as competencia_titulo, c.descripcion as competencia_descripcion, c.horario as competencia_horario, c.imagen_url as competencia_imagen_url, c.anio_evento as competencia_anio_evento,
+        f.id_foro as foro_id, f.titulo as foro_titulo, f.descripcion as foro_descripcion, f.fecha_creacion as foro_fecha_creacion, f.imagen_url as foro_imagen_url
       FROM asistencia a
       INNER JOIN usuarios u ON a.id_usuario = u.id_usuario
       INNER JOIN tipos_evento te ON a.id_tipo = te.id_tipo
@@ -726,11 +732,11 @@ async function obtenerAsistenciaPorId(id: number): Promise<AsistenciaCompleta> {
   const query = `
     SELECT 
       a.id_asistencia, a.id_usuario, a.id_tipo, a.id_taller, a.id_competencia, a.id_foro, a.fecha,
-      u.id_usuario as usuario_id, u.nombre as usuario_nombre, u.apellido as usuario_apellido, u.correo as usuario_correo,
+      u.id_usuario as usuario_id, u.nombre as usuario_nombre, u.apellido as usuario_apellido, u.correo as usuario_correo, u.foto_url,
       te.id_tipo as tipo_id, te.nombre as tipo_nombre,
-      t.id_taller as taller_id, t.titulo as taller_titulo, t.descripcion as taller_descripcion, t.horario as taller_horario,
-      c.id_competencia as competencia_id, c.titulo as competencia_titulo, c.descripcion as competencia_descripcion, c.horario as competencia_horario,
-      f.id_foro as foro_id, f.titulo as foro_titulo, f.descripcion as foro_descripcion, f.fecha_creacion as foro_fecha_creacion
+      t.id_taller as taller_id, t.titulo as taller_titulo, t.descripcion as taller_descripcion, t.horario as taller_horario, t.imagen_url as taller_imagen_url, t.anio_evento as taller_anio_evento,
+      c.id_competencia as competencia_id, c.titulo as competencia_titulo, c.descripcion as competencia_descripcion, c.horario as competencia_horario, c.imagen_url as competencia_imagen_url, c.anio_evento as competencia_anio_evento,
+      f.id_foro as foro_id, f.titulo as foro_titulo, f.descripcion as foro_descripcion, f.fecha_creacion as foro_fecha_creacion, f.imagen_url as foro_imagen_url
     FROM asistencia a
     INNER JOIN usuarios u ON a.id_usuario = u.id_usuario
     INNER JOIN tipos_evento te ON a.id_tipo = te.id_tipo
