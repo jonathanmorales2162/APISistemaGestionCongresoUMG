@@ -96,6 +96,11 @@ function parseRefreshTokenExpiration(expiresIn: string): Date {
  *           type: string
  *         description: Filtrar por colegio (búsqueda parcial)
  *       - in: query
+ *         name: id_rol
+ *         schema:
+ *           type: integer
+ *         description: Filtrar por ID del rol específico
+ *       - in: query
  *         name: pagina
  *         schema:
  *           type: integer
@@ -192,6 +197,12 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       paramCount++;
       query += ` AND u.colegio ILIKE $${paramCount}`;
       params.push(`%${filtros.colegio}%`);
+    }
+
+    if (filtros.id_rol) {
+      paramCount++;
+      query += ` AND u.id_rol = $${paramCount}`;
+      params.push(filtros.id_rol);
     }
 
     // Agregar paginación
