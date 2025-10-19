@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { z } from 'zod';
+import type { StringValue } from 'ms';
 import pool from '../db/pool.js';
 import { 
   crearUsuarioSchema, 
@@ -22,6 +23,37 @@ import { requirePermission, requireAnyPermission } from '../middleware/authoriza
 
 
 const router = Router();
+
+// Helper function to parse refresh token expiration time
+function parseRefreshTokenExpiration(expiresIn: string): Date {
+  const expiration = new Date();
+  const match = expiresIn.match(/^(\d+)([dhm])$/);
+  
+  if (!match) {
+    // Default to 7 days if format is invalid
+    expiration.setDate(expiration.getDate() + 7);
+    return expiration;
+  }
+  
+  const value = parseInt(match[1]);
+  const unit = match[2];
+  
+  switch (unit) {
+    case 'd':
+      expiration.setDate(expiration.getDate() + value);
+      break;
+    case 'h':
+      expiration.setHours(expiration.getHours() + value);
+      break;
+    case 'm':
+      expiration.setMinutes(expiration.getMinutes() + value);
+      break;
+    default:
+      expiration.setDate(expiration.getDate() + 7);
+  }
+  
+  return expiration;
+}
 
 /**
  * @swagger
@@ -819,17 +851,20 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
 
+    const jwtOptions: jwt.SignOptions = {
+      expiresIn: (process.env.JWT_EXPIRES_IN || '1h') as StringValue
+    };
+    
     const token = jwt.sign(
       { id_usuario: user.id_usuario },
       process.env.JWT_SECRET!,
-      { expiresIn: '1h' }
+      jwtOptions
     );
 
     // Generar refresh token
     const refreshToken = crypto.randomBytes(64).toString('hex');
     const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-    const refreshExpiration = new Date();
-    refreshExpiration.setDate(refreshExpiration.getDate() + 7); // 7 días
+    const refreshExpiration = parseRefreshTokenExpiration(process.env.REFRESH_TOKEN_EXPIRES_IN || '7d');
 
     // Revocar refresh tokens anteriores del usuario
     await pool.query(
@@ -1692,17 +1727,20 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
     const user = userResult.rows[0];
 
     // Generar nuevo access token
+    const jwtOptions: jwt.SignOptions = {
+      expiresIn: (process.env.JWT_EXPIRES_IN || '1h') as StringValue
+    };
+    
     const newToken = jwt.sign(
       { id_usuario: user.id_usuario },
       process.env.JWT_SECRET!,
-      { expiresIn: '1h' }
+      jwtOptions
     );
 
     // Generar nuevo refresh token
     const newRefreshToken = crypto.randomBytes(64).toString('hex');
     const newRefreshTokenHash = crypto.createHash('sha256').update(newRefreshToken).digest('hex');
-    const newRefreshExpiration = new Date();
-    newRefreshExpiration.setDate(newRefreshExpiration.getDate() + 7); // 7 días
+    const newRefreshExpiration = parseRefreshTokenExpiration(process.env.REFRESH_TOKEN_EXPIRES_IN || '7d');
 
     // Revocar el refresh token usado
     await pool.query(

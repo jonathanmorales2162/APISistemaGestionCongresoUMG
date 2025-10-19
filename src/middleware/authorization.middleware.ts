@@ -6,6 +6,7 @@ export const ROLE_PERMISSIONS = {
     "usuarios:create", "usuarios:read", "usuarios:update", "usuarios:delete",
     "roles:read", "roles:create", "roles:update", "roles:delete",
     "talleres:*", "competencias:*",
+    "categorias:*",
     "inscripciones:*",
     "asistencia:read", "asistencia:create", "asistencia:update", "asistencia:delete",
     "diplomas:generate", "diplomas:read",

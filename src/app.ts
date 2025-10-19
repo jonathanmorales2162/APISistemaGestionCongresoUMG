@@ -11,6 +11,10 @@ import participantesRouter from './routes/participantes.routes.js';
 import forosRouter from './routes/foros.routes.js';
 import talleresRouter from './routes/talleres.routes.js';
 import competenciasRouter from './routes/competencias.routes.js';
+import categoriasRouter from './routes/categorias.routes.js';
+import inscripcionesRouter from './routes/inscripciones.routes.js';
+import asistenciaRouter from './routes/asistencia.routes.js';
+import diplomasRouter from './routes/diplomas.routes.js';
 import { databaseErrorHandler, generalErrorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -87,6 +91,10 @@ app.use('/api/participantes', participantesRouter);
 app.use('/api/foros', forosRouter);
 app.use('/api/talleres', talleresRouter);
 app.use('/api/competencias', competenciasRouter);
+app.use('/api/categorias', categoriasRouter);
+app.use('/api/inscripciones', inscripcionesRouter);
+app.use('/api/asistencia', asistenciaRouter);
+app.use('/api/diplomas', diplomasRouter);
 
 // Manejador de errores
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

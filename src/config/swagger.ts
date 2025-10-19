@@ -197,6 +197,199 @@ const swaggerDefinition = {
           }
         }
       },
+      Asistencia: {
+        type: 'object',
+        properties: {
+          id_asistencia: {
+            type: 'integer',
+            description: 'ID único de la asistencia'
+          },
+          id_usuario: {
+            type: 'integer',
+            description: 'ID del usuario'
+          },
+          id_tipo: {
+            type: 'integer',
+            description: 'Tipo de evento (1=Taller, 2=Competencia, 3=Foro)'
+          },
+          id_taller: {
+            type: 'integer',
+            nullable: true,
+            description: 'ID del taller (si aplica)'
+          },
+          id_competencia: {
+            type: 'integer',
+            nullable: true,
+            description: 'ID de la competencia (si aplica)'
+          },
+          id_foro: {
+            type: 'integer',
+            nullable: true,
+            description: 'ID del foro (si aplica)'
+          },
+          fecha: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Fecha y hora de registro de asistencia'
+          },
+          estado: {
+            type: 'string',
+            enum: ['P', 'A', 'D'],
+            description: 'Estado de asistencia: P (Presente), A (Ausente), D (Desconocido)'
+          }
+        }
+      },
+      CrearAsistenciaRequest: {
+        type: 'object',
+        required: ['id_usuario'],
+        properties: {
+          id_usuario: {
+            type: 'integer',
+            description: 'ID del usuario'
+          },
+          id_taller: {
+            type: 'integer',
+            description: 'ID del taller (requerido si no se especifica id_competencia o id_foro)'
+          },
+          id_competencia: {
+            type: 'integer',
+            description: 'ID de la competencia (requerido si no se especifica id_taller o id_foro)'
+          },
+          id_foro: {
+            type: 'integer',
+            description: 'ID del foro (requerido si no se especifica id_taller o id_competencia)'
+          },
+          estado: {
+            type: 'string',
+            enum: ['P', 'A', 'D'],
+            default: 'D',
+            description: 'Estado de asistencia: P (Presente), A (Ausente), D (Desconocido)'
+          }
+        }
+      },
+      ActualizarAsistenciaRequest: {
+        type: 'object',
+        properties: {
+          estado: {
+            type: 'string',
+            enum: ['P', 'A', 'D'],
+            description: 'Estado de asistencia: P (Presente), A (Ausente), D (Desconocido)'
+          },
+          fecha: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Fecha y hora de registro de asistencia'
+          }
+        }
+      },
+      Diploma: {
+        type: 'object',
+        properties: {
+          id_diploma: {
+            type: 'integer',
+            description: 'ID único del diploma'
+          },
+          id_usuario: {
+            type: 'integer',
+            description: 'ID del usuario'
+          },
+          id_tipo: {
+            type: 'integer',
+            description: 'Tipo de evento (1=Taller, 2=Competencia)'
+          },
+          id_taller: {
+            type: 'integer',
+            nullable: true,
+            description: 'ID del taller (si aplica)'
+          },
+          id_competencia: {
+            type: 'integer',
+            nullable: true,
+            description: 'ID de la competencia (si aplica)'
+          },
+          fecha_generacion: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Fecha y hora de generación del diploma'
+          },
+          archivo_pdf: {
+            type: 'string',
+            nullable: true,
+            description: 'URL del archivo PDF del diploma'
+          },
+          usuario_nombre: {
+            type: 'string',
+            description: 'Nombre del usuario'
+          },
+          usuario_apellido: {
+            type: 'string',
+            description: 'Apellido del usuario'
+          },
+          usuario_correo: {
+            type: 'string',
+            description: 'Correo del usuario'
+          },
+          taller_titulo: {
+            type: 'string',
+            nullable: true,
+            description: 'Título del taller (si aplica)'
+          },
+          competencia_titulo: {
+            type: 'string',
+            nullable: true,
+            description: 'Título de la competencia (si aplica)'
+          },
+          tipo_evento: {
+            type: 'string',
+            description: 'Nombre del tipo de evento'
+          }
+        }
+      },
+      CrearDiplomaRequest: {
+        type: 'object',
+        required: ['id_usuario'],
+        properties: {
+          id_usuario: {
+            type: 'integer',
+            description: 'ID del usuario'
+          },
+          id_taller: {
+            type: 'integer',
+            description: 'ID del taller (requerido si no se especifica id_competencia)'
+          },
+          id_competencia: {
+            type: 'integer',
+            description: 'ID de la competencia (requerido si no se especifica id_taller)'
+          }
+        }
+      },
+      RespuestaDiplomas: {
+        type: 'object',
+        properties: {
+          diplomas: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/Diploma'
+            }
+          },
+          total: {
+            type: 'integer',
+            description: 'Total de diplomas'
+          },
+          pagina: {
+            type: 'integer',
+            description: 'Página actual'
+          },
+          limite: {
+            type: 'integer',
+            description: 'Límite de resultados por página'
+          },
+          total_paginas: {
+            type: 'integer',
+            description: 'Total de páginas'
+          }
+        }
+      },
       Error: {
         type: 'object',
         properties: {
